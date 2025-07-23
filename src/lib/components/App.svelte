@@ -16,73 +16,92 @@
     let error = $state<string | null>(null);
     let isLoading = $state(false);
 
-    // Derived chart data with comprehensive error handling
+    // Pure derived chart data without side effects
     let chartData = $derived.by(() => {
         try {
             // Validate flows array before transformation
             if (!Array.isArray(flows)) {
-                throw new Error('Flows data must be an array');
+                return {
+                    nodes: [],
+                    links: [],
+                    error: 'Flows data must be an array',
+                };
             }
 
             // Handle empty flows gracefully
             if (flows.length === 0) {
-                error = null;
-                return { nodes: [], links: [] };
+                return { nodes: [], links: [], error: null };
             }
 
             // Validate each flow before transformation
-            flows.forEach((flow, index) => {
+            for (let index = 0; index < flows.length; index++) {
+                const flow = flows[index];
                 if (!flow || typeof flow !== 'object') {
-                    throw new Error(
-                        `Invalid flow at index ${index}: flow must be an object`
-                    );
+                    return {
+                        nodes: [],
+                        links: [],
+                        error: `Invalid flow at index ${index}: flow must be an object`,
+                    };
                 }
                 if (!flow.id || typeof flow.id !== 'string') {
-                    throw new Error(
-                        `Invalid flow at index ${index}: missing or invalid id`
-                    );
+                    return {
+                        nodes: [],
+                        links: [],
+                        error: `Invalid flow at index ${index}: missing or invalid id`,
+                    };
                 }
                 if (!flow.source || typeof flow.source !== 'string') {
-                    throw new Error(
-                        `Invalid flow at index ${index}: missing or invalid source`
-                    );
+                    return {
+                        nodes: [],
+                        links: [],
+                        error: `Invalid flow at index ${index}: missing or invalid source`,
+                    };
                 }
                 if (!flow.target || typeof flow.target !== 'string') {
-                    throw new Error(
-                        `Invalid flow at index ${index}: missing or invalid target`
-                    );
+                    return {
+                        nodes: [],
+                        links: [],
+                        error: `Invalid flow at index ${index}: missing or invalid target`,
+                    };
                 }
                 if (
                     typeof flow.value !== 'number' ||
                     isNaN(flow.value) ||
                     flow.value <= 0
                 ) {
-                    throw new Error(
-                        `Invalid flow at index ${index}: value must be a positive number`
-                    );
+                    return {
+                        nodes: [],
+                        links: [],
+                        error: `Invalid flow at index ${index}: value must be a positive number`,
+                    };
                 }
-            });
+            }
 
             const result = transformFlowsToSankeyData(flows);
 
             // Validate transformation result
             if (!result || typeof result !== 'object') {
-                throw new Error('Data transformation returned invalid result');
+                return {
+                    nodes: [],
+                    links: [],
+                    error: 'Data transformation returned invalid result',
+                };
             }
             if (!Array.isArray(result.nodes) || !Array.isArray(result.links)) {
-                throw new Error(
-                    'Transformed data must contain nodes and links arrays'
-                );
+                return {
+                    nodes: [],
+                    links: [],
+                    error: 'Transformed data must contain nodes and links arrays',
+                };
             }
 
-            error = null; // Clear any previous transformation errors
-            return result;
+            return { ...result, error: null };
         } catch (err) {
             console.error('Error transforming flow data:', err);
-
-            // Create detailed error through error handler
             const errorMessage =
                 err instanceof Error ? err.message : String(err);
+
+            // Create detailed error through error handler (no state mutation here)
             errorHandler.createError(
                 errorMessage,
                 'validation',
@@ -90,11 +109,14 @@
                 true
             );
 
-            // Set user-friendly error message
-            error = errorMessage;
+            return { nodes: [], links: [], error: errorMessage };
+        }
+    });
 
-            // Return safe fallback data
-            return { nodes: [], links: [] };
+    // Effect to update error state based on chartData changes
+    $effect(() => {
+        if (chartData.error !== undefined) {
+            error = chartData.error;
         }
     });
 
@@ -397,7 +419,10 @@
                     </h3>
                     <div class="w-full overflow-hidden">
                         <SankeyChart
-                            data={chartData}
+                            data={{
+                                nodes: chartData.nodes,
+                                links: chartData.links,
+                            }}
                             theme={themeStore.mode}
                             width="100%"
                             height="400px"
