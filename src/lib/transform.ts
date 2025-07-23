@@ -42,8 +42,13 @@ export function generateLinks(flows: FlowData[]): SankeyLink[] {
  * @throws Error if data is invalid for transformation
  */
 export function transformFlowsToSankeyData(flows: FlowData[]): SankeyChartData {
+  // Handle null/undefined flows
+  if (flows === null || flows === undefined) {
+    throw new Error('Flows cannot be null or undefined');
+  }
+
   // Handle empty flows
-  if (!flows || flows.length === 0) {
+  if (flows.length === 0) {
     return {
       nodes: [],
       links: []

@@ -1,14 +1,12 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import App from '$lib/components/App.svelte';
-    import { addStylingTest } from '$lib/utils/styling-diagnostics.js';
-
-    // Initialize styling diagnostics in development
-    onMount(() => {
-        if (import.meta.env.DEV) {
-            setTimeout(() => addStylingTest(), 1000);
-        }
-    });
+    import App from '../lib/components/App.svelte';
 </script>
 
-<App />
+<svelte:head>
+    <title>Sankey Kiro App</title>
+    <meta name="description" content="A dynamic Sankey diagram generator built with Svelte and ECharts." />
+</svelte:head>
+
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <App />
+</div>

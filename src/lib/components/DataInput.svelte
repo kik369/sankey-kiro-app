@@ -56,11 +56,24 @@
 
     async function addFlow() {
         const result = await safeExecute(() => {
-            // Validate input
+            // Comprehensive input validation
             const validation = validateFlowInput(newFlow);
             if (!validation.isValid) {
                 validationResult = validation;
                 showValidation = true;
+
+                // Log validation errors for debugging
+                if (import.meta.env.DEV) {
+                    console.warn('Flow validation failed:', validation.errors);
+                }
+
+                // Create user-friendly error through error handler
+                errorHandler.handleValidationError(
+                    'flow_input',
+                    newFlow,
+                    validation.errors
+                );
+
                 return false;
             }
 
@@ -77,33 +90,121 @@
                     errors: performanceCheck.warnings.map(w => w.message),
                 };
                 showValidation = true;
+
+                // Create performance warning through error handler
+                performanceCheck.warnings.forEach(warning => {
+                    if (warning.level === 'error') {
+                        errorHandler.handlePerformanceWarning(
+                            warning.type,
+                            warning.current,
+                            warning.limit
+                        );
+                    }
+                });
+
                 return false;
             }
 
-            // Create flow data
-            const flowData = createFlowData(newFlow);
-            const updatedFlows = [...flows, flowData];
+            // Attempt to create flow data with error handling
+            let flowData;
+            try {
+                flowData = createFlowData(newFlow);
+            } catch (createError) {
+                const errorMessage =
+                    createError instanceof Error
+                        ? createError.message
+                        : 'Unknown error';
+                validationResult = {
+                    isValid: false,
+                    errors: [errorMessage],
+                };
+                showValidation = true;
 
-            // Update flows
-            flows = updatedFlows;
-            onFlowsChange(updatedFlows);
+                // Log creation error
+                errorHandler.createError(
+                    `Flow creation failed: ${errorMessage}`,
+                    'error',
+                    'flow_creation',
+                    true
+                );
 
-            // Reset form
-            newFlow = { source: '', target: '', value: '' };
-            showValidation = false;
+                return false;
+            }
 
-            return true;
+            // Check for duplicate flows and warn user
+            const duplicateCheck = flows.find(
+                flow =>
+                    flow.source.toLowerCase() ===
+                        newFlow.source.toLowerCase() &&
+                    flow.target.toLowerCase() === newFlow.target.toLowerCase()
+            );
+
+            if (duplicateCheck) {
+                validationResult = {
+                    isValid: true,
+                    errors: [],
+                    warnings: [
+                        `A flow from "${newFlow.source}" to "${newFlow.target}" already exists. This will create a duplicate.`,
+                    ],
+                };
+                showValidation = true;
+                // Continue with creation but show warning
+            }
+
+            // Update flows with comprehensive error handling
+            try {
+                const updatedFlows = [...flows, flowData];
+                flows = updatedFlows;
+                onFlowsChange(updatedFlows);
+
+                // Reset form and validation state
+                newFlow = { source: '', target: '', value: '' };
+                showValidation = false;
+                validationResult = { isValid: true, errors: [] };
+
+                return true;
+            } catch (updateError) {
+                const errorMessage =
+                    updateError instanceof Error
+                        ? updateError.message
+                        : 'Unknown error';
+                validationResult = {
+                    isValid: false,
+                    errors: [`Failed to update flows: ${errorMessage}`],
+                };
+                showValidation = true;
+
+                errorHandler.createError(
+                    `Flow update failed: ${errorMessage}`,
+                    'error',
+                    'flow_update',
+                    true
+                );
+
+                return false;
+            }
         }, 'data_input');
 
         if (!result) {
-            // Handle error case
-            validationResult = {
-                isValid: false,
-                errors: [
-                    'Failed to add flow. Please check your input and try again.',
-                ],
-            };
-            showValidation = true;
+            // Enhanced error handling for failed operations
+            if (!showValidation) {
+                // Only show generic error if no specific validation error was set
+                validationResult = {
+                    isValid: false,
+                    errors: [
+                        'Failed to add flow. Please check your input and try again.',
+                    ],
+                };
+                showValidation = true;
+            }
+
+            // Create comprehensive error report
+            errorHandler.createError(
+                'Flow addition operation failed',
+                'error',
+                'data_input',
+                true
+            );
         }
     }
 
@@ -235,40 +336,92 @@
             </div>
         </div>
 
-        <!-- Validation Errors -->
-        {#if showValidation && validationResult.errors.length > 0}
-            <div
-                class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
-            >
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg
-                            class="h-5 w-5 text-red-400"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
+        <!-- Enhanced Validation Display -->
+        {#if showValidation && (validationResult.errors.length > 0 || (validationResult.warnings && validationResult.warnings.length > 0))}
+            <div class="mt-4 space-y-3">
+                <!-- Validation Errors -->
+                {#if validationResult.errors.length > 0}
+                    <div
+                        class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+                    >
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg
+                                    class="h-5 w-5 text-red-400"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <h4
+                                    class="text-sm font-medium text-red-800 dark:text-red-200"
+                                >
+                                    Please fix the following errors:
+                                </h4>
+                                <ul
+                                    class="mt-2 text-sm text-red-700 dark:text-red-300 space-y-1"
+                                >
+                                    {#each validationResult.errors as error}
+                                        <li class="flex items-start">
+                                            <span
+                                                class="inline-block w-1.5 h-1.5 bg-red-400 rounded-full mt-2 mr-2 flex-shrink-0"
+                                            ></span>
+                                            <span>{error}</span>
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="ml-3">
-                        <h4
-                            class="text-sm font-medium text-red-800 dark:text-red-200"
-                        >
-                            Please fix the following errors:
-                        </h4>
-                        <ul
-                            class="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside"
-                        >
-                            {#each validationResult.errors as error}
-                                <li>{error}</li>
-                            {/each}
-                        </ul>
+                {/if}
+
+                <!-- Validation Warnings -->
+                {#if validationResult.warnings && validationResult.warnings.length > 0}
+                    <div
+                        class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md"
+                    >
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg
+                                    class="h-5 w-5 text-yellow-400"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <h4
+                                    class="text-sm font-medium text-yellow-800 dark:text-yellow-200"
+                                >
+                                    Suggestions for improvement:
+                                </h4>
+                                <ul
+                                    class="mt-2 text-sm text-yellow-700 dark:text-yellow-300 space-y-1"
+                                >
+                                    {#each validationResult.warnings as warning}
+                                        <li class="flex items-start">
+                                            <span
+                                                class="inline-block w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 mr-2 flex-shrink-0"
+                                            ></span>
+                                            <span>{warning}</span>
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                {/if}
             </div>
         {/if}
     </div>

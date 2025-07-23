@@ -7,55 +7,117 @@ export function validateFlowInput(input: FlowInput): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Validate source
-  if (!input.source || typeof input.source !== 'string') {
-    errors.push('Source field is required and must be text');
-  } else if (input.source.trim() === '') {
-    errors.push('Source cannot be empty or just spaces');
-  } else if (input.source.length > 50) {
-    warnings.push('Source name is quite long - consider shortening for better display');
+  // Handle completely invalid input objects
+  if (!input || typeof input !== 'object') {
+    errors.push('Input must be a valid object with source, target, and value properties');
+    return { isValid: false, errors, warnings };
   }
 
-  // Validate target
-  if (!input.target || typeof input.target !== 'string') {
-    errors.push('Target field is required and must be text');
-  } else if (input.target.trim() === '') {
-    errors.push('Target cannot be empty or just spaces');
-  } else if (input.target.length > 50) {
-    warnings.push('Target name is quite long - consider shortening for better display');
-  }
+  // Comprehensive input validation with detailed error messages
+  try {
+    // Validate source with enhanced error messages
+    if (typeof input.source !== 'string') {
+      errors.push('Source field is required and must be text');
+    } else if (!input.source) {
+      errors.push('Source cannot be empty or just spaces');
+    } else if (input.source.trim() === '') {
+      errors.push('Source cannot contain only whitespace');
+    } else {
+      // Additional source validations
+      if (input.source.length > 50) {
+        warnings.push('Source name is quite long - consider shortening for better display');
+      }
+      if (input.source.length > 100) {
+        errors.push('Source name is too long (maximum 100 characters)');
+      }
+      // Check for potentially problematic characters
+      if (/[<>\"'&]/.test(input.source)) {
+        warnings.push('Source contains special characters that may affect display');
+      }
+    }
 
-  // Validate that source and target are different
-  if (input.source && input.target &&
-      typeof input.source === 'string' && typeof input.target === 'string' &&
-      input.source.trim() === input.target.trim()) {
-    errors.push('Source and target must be different nodes');
-  }
+    // Validate target with enhanced error messages
+    if (typeof input.target !== 'string') {
+      errors.push('Target field is required and must be text');
+    } else if (!input.target) {
+      errors.push('Target cannot be empty or just spaces');
+    } else if (input.target.trim() === '') {
+      errors.push('Target cannot contain only whitespace');
+    } else {
+      // Additional target validations
+      if (input.target.length > 50) {
+        warnings.push('Target name is quite long - consider shortening for better display');
+      }
+      if (input.target.length > 100) {
+        errors.push('Target name is too long (maximum 100 characters)');
+      }
+      // Check for potentially problematic characters
+      if (/[<>\"'&]/.test(input.target)) {
+        warnings.push('Target contains special characters that may affect display');
+      }
+    }
 
-  // Validate value with detailed error messages
-  const valueStr = typeof input.value === 'string' ? input.value.trim() : String(input.value);
-  const numValue = typeof input.value === 'string' ? parseFloat(input.value) : input.value;
+    // Validate that source and target are different
+    if (input.source && input.target &&
+        typeof input.source === 'string' && typeof input.target === 'string' &&
+        input.source.trim().toLowerCase() === input.target.trim().toLowerCase()) {
+      errors.push('Source and target must be different nodes');
+    }
 
-  if (!valueStr || valueStr === '') {
-    errors.push('Value field is required');
-  } else if (isNaN(numValue)) {
-    errors.push('Value must be a valid number (e.g., 10, 5.5, 100)');
-  } else if (numValue <= 0) {
-    errors.push('Value must be greater than zero');
-  } else if (!isFinite(numValue)) {
-    errors.push('Value must be a finite number (not infinity)');
-  } else if (numValue > 1000000) {
-    warnings.push('Very large values may affect chart readability');
-  } else if (numValue < 0.01) {
-    warnings.push('Very small values may be hard to see in the chart');
-  }
+    // Enhanced value validation with comprehensive error handling
+    const valueStr = typeof input.value === 'string' ? input.value.trim() : String(input.value);
 
-  // Check for special characters that might cause issues
-  if (input.source && /[<>\"'&]/.test(input.source)) {
-    warnings.push('Source contains special characters that may affect display');
-  }
-  if (input.target && /[<>\"'&]/.test(input.target)) {
-    warnings.push('Target contains special characters that may affect display');
+    if (!valueStr || valueStr === '') {
+      errors.push('Value field is required');
+    } else {
+      // Try to parse the value with detailed error handling
+      let numValue: number;
+
+      if (typeof input.value === 'string') {
+        // Handle string input with comprehensive validation
+        if (!/^-?(\d+\.?\d*|\d*\.\d+)([eE][+-]?\d+)?$/.test(valueStr)) {
+          errors.push('Value must be a valid number (e.g., 10, 5.5, 100)');
+          return { isValid: false, errors, warnings };
+        }
+        numValue = parseFloat(valueStr);
+      } else if (typeof input.value === 'number') {
+        numValue = input.value;
+      } else {
+        errors.push('Value must be a number or numeric string');
+        return { isValid: false, errors, warnings };
+      }
+
+      // Comprehensive numeric validation
+      if (isNaN(numValue)) {
+        errors.push('Value must be a valid number (e.g., 10, 5.5, 100)');
+      } else if (!isFinite(numValue)) {
+        errors.push('Value must be a finite number (not infinity or NaN)');
+      } else if (numValue <= 0) {
+        errors.push('Value must be greater than zero');
+      } else if (numValue < 0.001) {
+        warnings.push('Very small values (< 0.001) may be hard to see in the chart');
+      } else if (numValue >= 1e100) {
+        errors.push('Value is too large (maximum 1e99)');
+      } else if (numValue > 1e12) {
+        errors.push('Value is too large (maximum 1e12)');
+      } else if (numValue > 100000000) {
+        warnings.push('Very large values (> 100,000,000) may affect chart readability');
+      }
+
+      // Check for precision issues
+      if (valueStr.includes('.') && valueStr.split('.')[1].length > 6) {
+        warnings.push('Values with more than 6 decimal places may be rounded');
+      }
+    }
+
+    // Additional cross-field validations
+    if (input.source && input.target && input.source === input.target) {
+      errors.push('Source and target cannot be identical');
+    }
+
+  } catch (validationError) {
+    // Handle unexpected validation errors
+    errors.push(`Validation error: ${validationError instanceof Error ? validationError.message : 'Unknown error occurred'}`);
   }
 
   return {
@@ -114,6 +176,12 @@ export function validateFlowDataArray(flows: FlowData[]): ValidationResult {
 export function validateFlowData(flow: FlowData): ValidationResult {
   const errors: string[] = [];
 
+  // Handle null/undefined flow
+  if (!flow || typeof flow !== 'object') {
+    errors.push('Flow must be a valid object');
+    return { isValid: false, errors };
+  }
+
   // Validate ID
   if (!flow.id || typeof flow.id !== 'string' || flow.id.trim() === '') {
     errors.push('ID must be a non-empty string');
@@ -170,7 +238,7 @@ export function createFlowData(input: FlowInput): FlowData {
  * Generates a unique ID for a flow
  */
 function generateFlowId(): string {
-  return `flow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `flow_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**

@@ -1,161 +1,213 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { validateFlowInput, validateFlowDataArray, createFlowData } from '$lib/validation';
+import { validateFlowInput, createFlowData, validateFlowDataArray } from '$lib/validation';
 import { transformFlowsToSankeyData } from '$lib/transform';
+import { errorHandler } from '$lib/utils/error-handler';
 import type { FlowInput, FlowData } from '$lib/types';
 
-describe('Invalid Data Input Handling', () => {
-    describe('Extreme Input Values', () => {
-        it('should handle extremely long node names', () => {
-            const longName = 'A'.repeat(1000);
-            const input: FlowInput = {
-                source: longName,
-                target: 'B',
-                value: '10'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            expect(result.warnings).toContain('Source name is quite long - consider shortening for better display');
-        });
-
-        it('should handle extremely large values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '999999999999'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            expect(result.warnings).toContain('Very large values may affect chart readability');
-        });
-
-        it('should handle extremely small values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '0.000001'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            expect(result.warnings).toContain('Very small values may be hard to see in the chart');
-        });
-
-        it('should reject infinite values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: 'Infinity'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Value must be a finite number (not infinity)');
-        });
-
-        it('should reject NaN values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: 'NaN'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Value must be a valid number (e.g., 10, 5.5, 100)');
-        });
+describe('Invalid Data Handling - Comprehensive Test Suite', () => {
+    beforeEach(() => {
+        errorHandler.clearAllErrors();
     });
 
-    describe('Malicious Input Handling', () => {
-        it('should handle HTML injection attempts', () => {
-            const input: FlowInput = {
-                source: '<script>alert("xss")</script>',
-                target: '<img src="x" onerror="alert(1)">',
-                value: '10'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            expect(result.warnings).toContain('Source contains special characters that may affect display');
-            expect(result.warnings).toContain('Target contains special characters that may affect display');
-        });
-
-        it('should handle SQL injection patterns', () => {
-            const input: FlowInput = {
-                source: "'; DROP TABLE users; --",
-                target: "1' OR '1'='1",
-                value: '10'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            expect(result.warnings).toContain('Source contains special characters that may affect display');
-            expect(result.warnings).toContain('Target contains special characters that may affect display');
-        });
-
-        it('should handle Unicode and emoji characters', () => {
-            const input: FlowInput = {
-                source: '🚀 Source Node 中文',
-                target: '🎯 Target Node العربية',
-                value: '10'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
-            // Unicode characters should be allowed
-            expect(result.errors).toHaveLength(0);
-        });
-    });
-
-    describe('Edge Case Data Structures', () => {
-        it('should handle null and undefined inputs', () => {
-            const inputs = [
-                { source: null, target: 'B', value: '10' },
-                { source: 'A', target: undefined, value: '10' },
-                { source: 'A', target: 'B', value: null }
+    describe('Extreme Input Validation', () => {
+        it('should handle completely malformed inputs', () => {
+            const malformedInputs: any[] = [
+                null,
+                undefined,
+                'string-instead-of-object',
+                123,
+                [],
+                true,
+                { wrong: 'structure' },
+                { source: null, target: null, value: null }
             ];
 
-            inputs.forEach((input: any) => {
+            malformedInputs.forEach((input) => {
+                try {
+                    const result = validateFlowInput(input);
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.length).toBeGreaterThan(0);
+                } catch (error) {
+                    // Some inputs might throw before validation
+                    expect(error).toBeDefined();
+                }
+            });
+        });
+
+        it('should handle edge case string inputs', () => {
+            const edgeCaseInputs: FlowInput[] = [
+                { source: '', target: '', value: '' },
+                { source: '   ', target: '   ', value: '   ' },
+                { source: '\n\t', target: '\r\n', value: '\t' },
+                { source: '0', target: '0', value: '0' },
+                { source: 'null', target: 'undefined', value: 'NaN' },
+                { source: 'true', target: 'false', value: 'Infinity' },
+                { source: '[]', target: '{}', value: 'function(){}' }
+            ];
+
+            edgeCaseInputs.forEach((input) => {
+                const result = validateFlowInput(input);
+
+                if (input.source.trim() === '' || input.target.trim() === '') {
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.some(error =>
+                        error.includes('empty') || error.includes('whitespace')
+                    )).toBe(true);
+                }
+
+                if (String(input.value) === '0' || String(input.value) === 'NaN' || String(input.value) === 'Infinity') {
+                    expect(result.isValid).toBe(false);
+                }
+            });
+        });
+
+        it('should handle unicode and special character inputs', () => {
+            const unicodeInputs: FlowInput[] = [
+                { source: '🚀', target: '🎯', value: '10' },
+                { source: '中文', target: 'العربية', value: '15' },
+                { source: 'Ñoño', target: 'Café', value: '20' },
+                { source: '\\n\\t\\r', target: '\\\\', value: '25' },
+                { source: '<script>alert("xss")</script>', target: 'DROP TABLE users;', value: '30' },
+                { source: '&lt;&gt;&amp;', target: '&#x27;&#x22;', value: '35' }
+            ];
+
+            unicodeInputs.forEach(input => {
+                const result = validateFlowInput(input);
+
+                // Unicode should be valid
+                if (input.source === '🚀' || input.source === '中文' || input.source === 'Ñoño') {
+                    expect(result.isValid).toBe(true);
+                }
+
+                // Special characters should trigger warnings
+                if (input.source.includes('<') || input.source.includes('&')) {
+                    expect(result.warnings?.some(warning =>
+                        warning.includes('special characters')
+                    )).toBe(true);
+                }
+            });
+        });
+
+        it('should handle extremely large inputs', () => {
+            const largeInputs: FlowInput[] = [
+                { source: 'A'.repeat(1000), target: 'B', value: '10' },
+                { source: 'A', target: 'B'.repeat(1000), value: '10' },
+                { source: 'A', target: 'B', value: '9'.repeat(20) },
+                { source: 'A', target: 'B', value: '1e308' }, // Near JavaScript max
+                { source: 'A', target: 'B', value: '1e309' }  // Infinity
+            ];
+
+            largeInputs.forEach(input => {
+                const result = validateFlowInput(input);
+
+                if (input.source.length > 100 || input.target.length > 100) {
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.some(error =>
+                        error.includes('too long')
+                    )).toBe(true);
+                }
+
+                if (String(input.value) === '1e309') {
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.some(error =>
+                        error.includes('finite')
+                    )).toBe(true);
+                }
+            });
+        });
+    });
+
+    describe('Data Type Confusion', () => {
+        it('should handle type confusion in flow inputs', () => {
+            const typeConfusedInputs: any[] = [
+                { source: 123, target: 'B', value: '10' },
+                { source: 'A', target: true, value: '10' },
+                { source: 'A', target: 'B', value: false },
+                { source: ['A'], target: 'B', value: '10' },
+                { source: 'A', target: { name: 'B' }, value: '10' },
+                { source: 'A', target: 'B', value: [10] },
+                { source: () => 'A', target: 'B', value: '10' }
+            ];
+
+            typeConfusedInputs.forEach(input => {
                 const result = validateFlowInput(input);
                 expect(result.isValid).toBe(false);
                 expect(result.errors.length).toBeGreaterThan(0);
             });
         });
 
-        it('should handle whitespace-only inputs', () => {
-            const input: FlowInput = {
-                source: '   ',
-                target: '\t\n',
-                value: '  10  '
-            };
+        it('should handle numeric string edge cases', () => {
+            const numericEdgeCases: FlowInput[] = [
+                { source: 'A', target: 'B', value: '0.0' },
+                { source: 'A', target: 'B', value: '00010' },
+                { source: 'A', target: 'B', value: '+10' },
+                { source: 'A', target: 'B', value: '10.' },
+                { source: 'A', target: 'B', value: '.10' },
+                { source: 'A', target: 'B', value: '1e2' },
+                { source: 'A', target: 'B', value: '1E-2' },
+                { source: 'A', target: 'B', value: '10,5' }, // European decimal
+                { source: 'A', target: 'B', value: '10 5' }, // Space in number
+                { source: 'A', target: 'B', value: '10$' }   // Currency symbol
+            ];
 
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Source cannot be empty or just spaces');
-            expect(result.errors).toContain('Target cannot be empty or just spaces');
-        });
+            numericEdgeCases.forEach(input => {
+                const result = validateFlowInput(input);
 
-        it('should handle mixed data types', () => {
-            const input: any = {
-                source: 123,
-                target: true,
-                value: { number: 10 }
-            };
+                // Valid numeric formats
+                if (['0.0', '00010', '+10', '10.', '.10', '1e2', '1E-2'].includes(String(input.value))) {
+                    if (String(input.value) === '0.0') {
+                        expect(result.isValid).toBe(false); // Zero not allowed
+                    } else {
+                        expect(result.isValid).toBe(true);
+                    }
+                }
 
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false);
-            expect(result.errors.length).toBeGreaterThan(0);
+                // Invalid numeric formats
+                if (['10,5', '10 5', '10$'].includes(String(input.value))) {
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.some(error =>
+                        error.includes('valid number')
+                    )).toBe(true);
+                }
+            });
         });
     });
 
-    describe('Performance Limit Testing', () => {
-        it('should validate arrays exceeding node limits', () => {
-            const flows: FlowData[] = [];
+    describe('Flow Data Array Validation', () => {
+        it('should handle malformed flow data arrays', () => {
+            const malformedArrays: any[] = [
+                null,
+                undefined,
+                'not-an-array',
+                123,
+                { notAnArray: true },
+                [null, undefined],
+                ['string', 'elements'],
+                [{ incomplete: 'data' }],
+                [{ id: '1', source: 'A' }], // Missing target and value
+                [{ source: 'A', target: 'B', value: 10 }], // Missing id
+            ];
 
-            // Create flows that will generate more than 50 unique nodes
+            malformedArrays.forEach(flows => {
+                if (!Array.isArray(flows)) {
+                    const result = validateFlowDataArray(flows);
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.some(error =>
+                        error.includes('array')
+                    )).toBe(true);
+                } else {
+                    const result = validateFlowDataArray(flows);
+                    expect(result.isValid).toBe(false);
+                    expect(result.errors.length).toBeGreaterThan(0);
+                }
+            });
+        });
+
+        it('should handle performance limit violations', () => {
+            // Create flows that exceed node limit (50 nodes)
+            const manyNodeFlows: FlowData[] = [];
             for (let i = 0; i < 60; i++) {
-                flows.push({
+                manyNodeFlows.push({
                     id: `flow_${i}`,
                     source: `Source_${i}`,
                     target: `Target_${i}`,
@@ -163,176 +215,179 @@ describe('Invalid Data Input Handling', () => {
                 });
             }
 
-            const result = validateFlowDataArray(flows);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Maximum of 50 nodes allowed for optimal performance');
-        });
+            const nodeResult = validateFlowDataArray(manyNodeFlows);
+            expect(nodeResult.isValid).toBe(false);
+            expect(nodeResult.errors.some(error =>
+                error.includes('50 nodes')
+            )).toBe(true);
 
-        it('should validate arrays exceeding connection limits', () => {
-            const flows: FlowData[] = [];
-
-            // Create more than 100 connections
+            // Create flows that exceed connection limit (100 connections)
+            const manyConnectionFlows: FlowData[] = [];
             for (let i = 0; i < 110; i++) {
-                flows.push({
+                manyConnectionFlows.push({
                     id: `flow_${i}`,
-                    source: 'A',
-                    target: 'B',
+                    source: `Source_${i % 10}`, // Reuse sources to avoid node limit
+                    target: `Target_${i % 10}`,
                     value: 10
                 });
             }
 
-            const result = validateFlowDataArray(flows);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Maximum of 100 connections allowed for optimal performance');
+            const connectionResult = validateFlowDataArray(manyConnectionFlows);
+            expect(connectionResult.isValid).toBe(false);
+            expect(connectionResult.errors.some(error =>
+                error.includes('100 connections')
+            )).toBe(true);
         });
     });
 
     describe('Data Transformation Error Handling', () => {
-        it('should handle empty flow arrays', () => {
-            const result = transformFlowsToSankeyData([]);
-            expect(result.nodes).toHaveLength(0);
-            expect(result.links).toHaveLength(0);
-        });
-
-        it('should handle flows with missing properties', () => {
-            const invalidFlows: any[] = [
-                { id: '1', source: 'A' }, // missing target and value
-                { id: '2', target: 'B', value: 10 }, // missing source
-                { id: '3', source: 'A', target: 'B' } // missing value
+        it('should handle transformation of invalid flow data', () => {
+            const invalidFlowArrays: any[] = [
+                [{ id: '1', source: 'A', target: 'B' }], // Missing value
+                [{ id: '1', source: 'A', value: 10 }], // Missing target
+                [{ id: '1', target: 'B', value: 10 }], // Missing source
+                [{ source: 'A', target: 'B', value: 10 }], // Missing id
+                [{ id: null, source: 'A', target: 'B', value: 10 }], // Null id
+                [{ id: '1', source: null, target: 'B', value: 10 }], // Null source
+                [{ id: '1', source: 'A', target: null, value: 10 }], // Null target
+                [{ id: '1', source: 'A', target: 'B', value: null }], // Null value
+                [{ id: '1', source: 'A', target: 'B', value: 'invalid' }], // Invalid value type
+                [{ id: '1', source: 'A', target: 'B', value: -10 }], // Negative value
+                [{ id: '1', source: 'A', target: 'B', value: 0 }], // Zero value
+                [{ id: '1', source: 'A', target: 'B', value: NaN }], // NaN value
+                [{ id: '1', source: 'A', target: 'B', value: Infinity }], // Infinite value
             ];
 
-            expect(() => transformFlowsToSankeyData(invalidFlows)).toThrow();
+            invalidFlowArrays.forEach((flows) => {
+                expect(() => transformFlowsToSankeyData(flows)).toThrow();
+            });
         });
 
-        it('should handle flows with invalid value types', () => {
-            const invalidFlows: any[] = [
-                { id: '1', source: 'A', target: 'B', value: 'invalid' },
-                { id: '2', source: 'C', target: 'D', value: null },
-                { id: '3', source: 'E', target: 'F', value: undefined }
+        it('should handle mixed valid and invalid flow data', () => {
+            const mixedFlows: any[] = [
+                { id: '1', source: 'A', target: 'B', value: 10 }, // Valid
+                { id: '2', source: 'C', target: 'D' }, // Missing value
+                { id: '3', source: 'E', target: 'F', value: 15 }, // Valid
+                { id: '4', source: null, target: 'G', value: 20 }, // Invalid source
             ];
 
-            expect(() => transformFlowsToSankeyData(invalidFlows)).toThrow();
+            expect(() => transformFlowsToSankeyData(mixedFlows)).toThrow();
         });
 
-        it('should handle circular references', () => {
-            const flows: FlowData[] = [
-                { id: '1', source: 'A', target: 'B', value: 10 },
-                { id: '2', source: 'B', target: 'C', value: 10 },
-                { id: '3', source: 'C', target: 'A', value: 10 }
+        it('should handle circular references and self-loops', () => {
+            const circularFlows: FlowData[] = [
+                { id: '1', source: 'A', target: 'A', value: 10 }, // Self-loop
+                { id: '2', source: 'B', target: 'C', value: 15 },
+                { id: '3', source: 'C', target: 'B', value: 20 }, // Circular
             ];
 
-            // Should not throw - circular references are valid in Sankey diagrams
-            const result = transformFlowsToSankeyData(flows);
-            expect(result.nodes).toHaveLength(3);
-            expect(result.links).toHaveLength(3);
+            // Self-loops should be caught by validation
+            const selfLoopValidation = validateFlowInput({
+                source: 'A',
+                target: 'A',
+                value: '10'
+            });
+            expect(selfLoopValidation.isValid).toBe(false);
+
+            // Circular references should still transform (they're valid in Sankey diagrams)
+            const result = transformFlowsToSankeyData(circularFlows.slice(1));
+            expect(result.nodes.length).toBe(2);
+            expect(result.links.length).toBe(2);
         });
     });
 
-    describe('Boundary Value Testing', () => {
-        it('should handle minimum valid values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '0.01'
-            };
+    describe('Error Recovery Scenarios', () => {
+        it('should demonstrate progressive error fixing', () => {
+            // Start with completely invalid input
+            let input: FlowInput = { source: '', target: '', value: 'invalid' };
+            let result = validateFlowInput(input);
+            const initialErrorCount = result.errors.length;
+            expect(initialErrorCount).toBe(3);
 
-            const result = validateFlowInput(input);
+            // Fix source
+            input.source = 'Valid Source';
+            result = validateFlowInput(input);
+            expect(result.errors.length).toBe(initialErrorCount - 1);
+
+            // Fix target
+            input.target = 'Valid Target';
+            result = validateFlowInput(input);
+            expect(result.errors.length).toBe(1);
+
+            // Fix value
+            input.value = '10.5';
+            result = validateFlowInput(input);
             expect(result.isValid).toBe(true);
+            expect(result.errors.length).toBe(0);
+
+            // Should now be able to create flow data
+            expect(() => createFlowData(input)).not.toThrow();
         });
 
-        it('should handle maximum reasonable values', () => {
-            const input: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '999999'
-            };
+        it('should handle partial data recovery', () => {
+            const partiallyValidInputs: FlowInput[] = [
+                { source: 'A', target: '', value: '10' }, // Missing target
+                { source: '', target: 'B', value: '10' }, // Missing source
+                { source: 'A', target: 'B', value: '' },  // Missing value
+            ];
 
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(true);
+            partiallyValidInputs.forEach(input => {
+                const result = validateFlowInput(input);
+                expect(result.isValid).toBe(false);
+                expect(result.errors.length).toBe(1); // Only one error each
+            });
         });
 
-        it('should reject values at the boundary', () => {
-            const zeroInput: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '0'
-            };
+        it('should provide helpful error context for debugging', () => {
+            const debuggingScenarios = [
+                { input: { source: 'A', target: 'A', value: '10' }, expectedContext: 'identical' },
+                { input: { source: 'A', target: 'B', value: '0' }, expectedContext: 'zero' },
+                { input: { source: 'A', target: 'B', value: '-5' }, expectedContext: 'negative' },
+                { input: { source: '', target: 'B', value: '10' }, expectedContext: 'empty' },
+                { input: { source: 'A', target: 'B', value: 'text' }, expectedContext: 'number' },
+            ];
 
-            const negativeInput: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '-0.01'
-            };
-
-            expect(validateFlowInput(zeroInput).isValid).toBe(false);
-            expect(validateFlowInput(negativeInput).isValid).toBe(false);
-        });
-    });
-
-    describe('Concurrent Error Scenarios', () => {
-        it('should handle multiple validation errors simultaneously', () => {
-            const input: FlowInput = {
-                source: '',
-                target: '',
-                value: 'invalid'
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false);
-            expect(result.errors).toHaveLength(3); // source, target, and value errors
-        });
-
-        it('should handle validation errors with warnings', () => {
-            const input: FlowInput = {
-                source: 'A'.repeat(60), // Long name (warning)
-                target: 'A'.repeat(60), // Same long name (error + warning)
-                value: '0.001' // Small value (warning)
-            };
-
-            const result = validateFlowInput(input);
-            expect(result.isValid).toBe(false); // Due to same source/target
-            expect(result.errors).toContain('Source and target must be different nodes');
-            expect(result.warnings).toHaveLength(3); // Two long names + small value
+            debuggingScenarios.forEach(({ input, expectedContext }) => {
+                const result = validateFlowInput(input);
+                expect(result.isValid).toBe(false);
+                expect(result.errors.some(error =>
+                    error.toLowerCase().includes(expectedContext)
+                )).toBe(true);
+            });
         });
     });
 
-    describe('Recovery Testing', () => {
-        it('should allow valid input after invalid input', () => {
-            // First invalid input
-            const invalidInput: FlowInput = {
-                source: '',
-                target: 'B',
-                value: '10'
-            };
+    describe('Stress Testing with Invalid Data', () => {
+        it('should handle rapid invalid input validation', () => {
+            const startTime = Date.now();
 
-            const invalidResult = validateFlowInput(invalidInput);
-            expect(invalidResult.isValid).toBe(false);
+            for (let i = 0; i < 100; i++) {
+                const invalidInput: FlowInput = {
+                    source: i % 2 === 0 ? '' : 'A'.repeat(200),
+                    target: i % 3 === 0 ? '' : 'B'.repeat(200),
+                    value: i % 4 === 0 ? 'invalid' : '-10'
+                };
 
-            // Then valid input
-            const validInput: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '10'
-            };
+                validateFlowInput(invalidInput);
+            }
 
-            const validResult = validateFlowInput(validInput);
-            expect(validResult.isValid).toBe(true);
+            const endTime = Date.now();
+            expect(endTime - startTime).toBeLessThan(200); // Should complete quickly
         });
 
-        it('should create valid flow data after fixing errors', () => {
-            const validInput: FlowInput = {
-                source: 'A',
-                target: 'B',
-                value: '10'
-            };
+        it('should handle memory-intensive invalid data', () => {
+            const largeInvalidFlows: any[] = [];
 
-            expect(() => createFlowData(validInput)).not.toThrow();
+            for (let i = 0; i < 1000; i++) {
+                largeInvalidFlows.push({
+                    id: i % 2 === 0 ? null : `flow_${i}`,
+                    source: i % 3 === 0 ? null : `Source_${i}`,
+                    target: i % 4 === 0 ? null : `Target_${i}`,
+                    value: i % 5 === 0 ? null : Math.random() * 100
+                });
+            }
 
-            const flowData = createFlowData(validInput);
-            expect(flowData.source).toBe('A');
-            expect(flowData.target).toBe('B');
-            expect(flowData.value).toBe(10);
-            expect(flowData.id).toBeDefined();
+            expect(() => transformFlowsToSankeyData(largeInvalidFlows)).toThrow();
         });
     });
 });

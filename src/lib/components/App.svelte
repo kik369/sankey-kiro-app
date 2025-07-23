@@ -19,22 +19,79 @@
     // Derived chart data with comprehensive error handling
     let chartData = $derived.by(() => {
         try {
+            // Validate flows array before transformation
+            if (!Array.isArray(flows)) {
+                throw new Error('Flows data must be an array');
+            }
+
+            // Handle empty flows gracefully
+            if (flows.length === 0) {
+                error = null;
+                return { nodes: [], links: [] };
+            }
+
+            // Validate each flow before transformation
+            flows.forEach((flow, index) => {
+                if (!flow || typeof flow !== 'object') {
+                    throw new Error(
+                        `Invalid flow at index ${index}: flow must be an object`
+                    );
+                }
+                if (!flow.id || typeof flow.id !== 'string') {
+                    throw new Error(
+                        `Invalid flow at index ${index}: missing or invalid id`
+                    );
+                }
+                if (!flow.source || typeof flow.source !== 'string') {
+                    throw new Error(
+                        `Invalid flow at index ${index}: missing or invalid source`
+                    );
+                }
+                if (!flow.target || typeof flow.target !== 'string') {
+                    throw new Error(
+                        `Invalid flow at index ${index}: missing or invalid target`
+                    );
+                }
+                if (
+                    typeof flow.value !== 'number' ||
+                    isNaN(flow.value) ||
+                    flow.value <= 0
+                ) {
+                    throw new Error(
+                        `Invalid flow at index ${index}: value must be a positive number`
+                    );
+                }
+            });
+
             const result = transformFlowsToSankeyData(flows);
+
+            // Validate transformation result
+            if (!result || typeof result !== 'object') {
+                throw new Error('Data transformation returned invalid result');
+            }
+            if (!Array.isArray(result.nodes) || !Array.isArray(result.links)) {
+                throw new Error(
+                    'Transformed data must contain nodes and links arrays'
+                );
+            }
+
             error = null; // Clear any previous transformation errors
             return result;
         } catch (err) {
             console.error('Error transforming flow data:', err);
 
             // Create detailed error through error handler
-            errorHandler.createError(
+            const transformationError = errorHandler.createError(
                 err instanceof Error ? err.message : String(err),
                 'error',
                 'data_transformation',
                 true
             );
 
-            error =
-                'Failed to process chart data. Please check your input format.';
+            // Set user-friendly error message
+            error = transformationError.userMessage;
+
+            // Return safe fallback data
             return { nodes: [], links: [] };
         }
     });
@@ -58,13 +115,39 @@
     // Error boundary for flow operations with enhanced error handling
     async function handleFlowsChange(newFlows: FlowData[]) {
         const result = await safeExecute(() => {
+            // Validate new flows before updating
+            if (!Array.isArray(newFlows)) {
+                throw new Error('New flows must be an array');
+            }
+
+            // Validate each flow
+            newFlows.forEach((flow, index) => {
+                if (!flow || typeof flow !== 'object') {
+                    throw new Error(`Invalid flow at index ${index}`);
+                }
+                if (
+                    !flow.id ||
+                    !flow.source ||
+                    !flow.target ||
+                    typeof flow.value !== 'number'
+                ) {
+                    throw new Error(`Incomplete flow data at index ${index}`);
+                }
+            });
+
             flows = newFlows;
             error = null;
             return true;
         }, 'flow_update');
 
         if (!result) {
-            error = 'Failed to update flows. Please try again.';
+            const updateError = errorHandler.createError(
+                'Failed to update flows',
+                'error',
+                'flow_update',
+                true
+            );
+            error = updateError.userMessage;
         }
     }
 
@@ -77,20 +160,36 @@
         }, 'clear_flows');
 
         if (!result) {
-            error = 'Failed to clear flows. Please try again.';
+            const clearError = errorHandler.createError(
+                'Failed to clear flows',
+                'error',
+                'clear_flows',
+                true
+            );
+            error = clearError.userMessage;
         }
     }
 
     // Error boundary for theme operations
     async function handleThemeToggle() {
         const result = await safeExecute(() => {
+            if (!themeStore || typeof themeStore.toggle !== 'function') {
+                throw new Error('Theme store not properly initialized');
+            }
+
             themeStore.toggle();
             error = null;
             return true;
         }, 'theme_toggle');
 
         if (!result) {
-            error = 'Failed to change theme. Please try again.';
+            const themeError = errorHandler.createError(
+                'Failed to change theme',
+                'error',
+                'theme_toggle',
+                true
+            );
+            error = themeError.userMessage;
         }
     }
 

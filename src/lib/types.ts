@@ -64,6 +64,17 @@ export interface AppError {
 }
 
 /**
+ * Performance warning interface
+ */
+export interface PerformanceWarning {
+  metric: string;
+  currentValue: number;
+  threshold: number;
+  level: 'warning' | 'error';
+  message: string;
+}
+
+/**
  * Chart error types
  */
 export type ChartErrorType =
@@ -78,7 +89,7 @@ export type ChartErrorType =
  */
 export interface ChartError extends AppError {
   type: ChartErrorType;
-  chartData?: SankeyChartData;
+  chartData?: any;
 }
 
 /**
