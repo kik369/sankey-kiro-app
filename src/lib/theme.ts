@@ -114,3 +114,13 @@ export function initializeTheme(): ThemeMode {
   applyTheme(theme);
   return theme;
 }
+
+/**
+ * Initialize theme immediately for SSR compatibility
+ */
+export function initializeThemeSSR(): void {
+  if (typeof window !== 'undefined') {
+    const theme = getStoredTheme();
+    applyTheme(theme);
+  }
+}

@@ -6,6 +6,8 @@
     import SankeyChart from '$lib/components/SankeyChart.svelte';
     import DataInput from '$lib/components/DataInput.svelte';
     import ControlPanel from '$lib/components/ControlPanel.svelte';
+    import PerformanceDashboard from '$lib/components/PerformanceDashboard.svelte';
+    import { addStylingTest } from '$lib/utils/styling-diagnostics.js';
 
     // Flow data state
     let flows = $state([] as FlowData[]);
@@ -18,6 +20,11 @@
     onMount(() => {
         themeStore.initialize();
         initialized = true;
+
+        // Add styling diagnostics in development
+        if (import.meta.env.DEV) {
+            setTimeout(() => addStylingTest(), 1000);
+        }
     });
 
     function handleClearAll() {
@@ -102,6 +109,9 @@
 
                 <!-- Control Panel -->
                 <ControlPanel {flows} onClearAll={handleClearAll} />
+
+                <!-- Performance Dashboard -->
+                <PerformanceDashboard {flows} showDetails={flows.length > 20} />
 
                 <!-- Sankey Chart Visualization -->
                 <div

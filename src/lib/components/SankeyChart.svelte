@@ -34,6 +34,10 @@
     // Import performance utilities
     import { PERFORMANCE_LIMITS } from '$lib/utils/performance-limits.js';
     import { debounce, throttle } from '$lib/utils/debounce.js';
+    import {
+        performanceMonitor,
+        measurePerformance,
+    } from '$lib/utils/performance-monitor.js';
 
     // Performance constants
     const DEBOUNCE_DELAY = PERFORMANCE_LIMITS.DEBOUNCE_DELAY;
@@ -465,23 +469,37 @@
         if (!chartInstance || !isInitialized) return;
 
         try {
-            const option = getChartOption(data, theme);
+            // Measure chart update performance
+            const flows = data.links.map((link: SankeyLink) => ({
+                id: `${link.source}-${link.target}`,
+                source: link.source,
+                target: link.target,
+                value: link.value,
+            }));
 
-            // Performance optimization: use different update strategies based on data size
-            const nodeCount = data.nodes.length;
-            const linkCount = data.links.length;
-            const isLargeDataset = nodeCount > 30 || linkCount > 60;
+            measurePerformance(
+                () => {
+                    const option = getChartOption(data, theme);
 
-            // Use optimized settings for large datasets
-            chartInstance.setOption(option, {
-                notMerge: isLargeDataset, // Don't merge for large datasets to avoid memory issues
-                lazyUpdate: isLargeDataset, // Use lazy updates for large datasets
-                silent: isLargeDataset, // Reduce event overhead for large datasets
-                replaceMerge: ['series'],
-            });
+                    // Performance optimization: use different update strategies based on data size
+                    const nodeCount = data.nodes.length;
+                    const linkCount = data.links.length;
+                    const isLargeDataset = nodeCount > 30 || linkCount > 60;
 
-            // Throttled resize for better performance
-            throttledResize();
+                    // Use optimized settings for large datasets
+                    chartInstance!.setOption(option, {
+                        notMerge: isLargeDataset, // Don't merge for large datasets to avoid memory issues
+                        lazyUpdate: isLargeDataset, // Use lazy updates for large datasets
+                        silent: isLargeDataset, // Reduce event overhead for large datasets
+                        replaceMerge: ['series'],
+                    });
+
+                    // Throttled resize for better performance
+                    throttledResize();
+                },
+                flows,
+                'Chart Update'
+            );
         } catch (error) {
             console.error('Failed to update chart:', error);
         }
