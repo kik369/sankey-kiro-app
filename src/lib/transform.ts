@@ -39,6 +39,7 @@ export function generateLinks(flows: FlowData[]): SankeyLink[] {
  * Transform flow data to complete ECharts Sankey format
  * @param flows Array of flow data
  * @returns Complete Sankey chart data structure
+ * @throws Error if data is invalid for transformation
  */
 export function transformFlowsToSankeyData(flows: FlowData[]): SankeyChartData {
   // Handle empty flows
@@ -48,6 +49,34 @@ export function transformFlowsToSankeyData(flows: FlowData[]): SankeyChartData {
       links: []
     };
   }
+
+  // Validate input data structure
+  if (!Array.isArray(flows)) {
+    throw new Error('Flows must be an array');
+  }
+
+  // Validate each flow has required properties
+  flows.forEach((flow, index) => {
+    if (!flow || typeof flow !== 'object') {
+      throw new Error(`Flow at index ${index} is not a valid object`);
+    }
+
+    if (!flow.hasOwnProperty('source') || typeof flow.source !== 'string') {
+      throw new Error(`Flow at index ${index} missing valid source property`);
+    }
+
+    if (!flow.hasOwnProperty('target') || typeof flow.target !== 'string') {
+      throw new Error(`Flow at index ${index} missing valid target property`);
+    }
+
+    if (!flow.hasOwnProperty('value') || typeof flow.value !== 'number' || isNaN(flow.value)) {
+      throw new Error(`Flow at index ${index} missing valid value property`);
+    }
+
+    if (flow.value <= 0) {
+      throw new Error(`Flow at index ${index} has invalid value: ${flow.value} (must be positive)`);
+    }
+  });
 
   // Extract nodes and generate links
   const nodes = extractNodes(flows);

@@ -1,0 +1,312 @@
+<script lang="ts">
+    import { onMount } from 'svelte';
+    import type { FlowData } from '$lib/types';
+    import { transformFlowsToSankeyData } from '$lib/transform';
+    import { themeStore } from '$lib/stores/theme.svelte';
+    import SankeyChart from './SankeyChart.svelte';
+    import DataInput from './DataInput.svelte';
+    import ControlPanel from './ControlPanel.svelte';
+    import PerformanceDashboard from './PerformanceDashboard.svelte';
+    import ErrorDisplay from './ErrorDisplay.svelte';
+    import { errorHandler, safeExecute } from '$lib/utils/error-handler.js';
+
+    // Global application state using Svelte 5 runes
+    let flows = $state([] as FlowData[]);
+    let initialized = $state(false);
+    let error = $state<string | null>(null);
+    let isLoading = $state(false);
+
+    // Derived chart data with comprehensive error handling
+    let chartData = $derived.by(() => {
+        try {
+            const result = transformFlowsToSankeyData(flows);
+            error = null; // Clear any previous transformation errors
+            return result;
+        } catch (err) {
+            console.error('Error transforming flow data:', err);
+
+            // Create detailed error through error handler
+            errorHandler.createError(
+                err instanceof Error ? err.message : String(err),
+                'error',
+                'data_transformation',
+                true
+            );
+
+            error =
+                'Failed to process chart data. Please check your input format.';
+            return { nodes: [], links: [] };
+        }
+    });
+
+    // Initialize application
+    onMount(() => {
+        try {
+            isLoading = true;
+            themeStore.initialize();
+            initialized = true;
+            error = null;
+        } catch (err) {
+            console.error('Failed to initialize application:', err);
+            error =
+                'Failed to initialize application. Please refresh the page.';
+        } finally {
+            isLoading = false;
+        }
+    });
+
+    // Error boundary for flow operations with enhanced error handling
+    async function handleFlowsChange(newFlows: FlowData[]) {
+        const result = await safeExecute(() => {
+            flows = newFlows;
+            error = null;
+            return true;
+        }, 'flow_update');
+
+        if (!result) {
+            error = 'Failed to update flows. Please try again.';
+        }
+    }
+
+    // Error boundary for clear all operation
+    async function handleClearAll() {
+        const result = await safeExecute(() => {
+            flows = [];
+            error = null;
+            return true;
+        }, 'clear_flows');
+
+        if (!result) {
+            error = 'Failed to clear flows. Please try again.';
+        }
+    }
+
+    // Error boundary for theme operations
+    async function handleThemeToggle() {
+        const result = await safeExecute(() => {
+            themeStore.toggle();
+            error = null;
+            return true;
+        }, 'theme_toggle');
+
+        if (!result) {
+            error = 'Failed to change theme. Please try again.';
+        }
+    }
+
+    // Clear error after a timeout
+    $effect(() => {
+        if (error) {
+            const timeoutId = setTimeout(() => {
+                error = null;
+            }, 5000); // Clear error after 5 seconds
+
+            return () => clearTimeout(timeoutId);
+        }
+    });
+</script>
+
+<div
+    class="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200"
+>
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <!-- Loading State -->
+        {#if isLoading}
+            <div class="flex items-center justify-center min-h-screen">
+                <div class="text-center">
+                    <div
+                        class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"
+                    ></div>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Loading application...
+                    </p>
+                </div>
+            </div>
+        {:else if !initialized}
+            <!-- Initialization Error -->
+            <div class="flex items-center justify-center min-h-screen">
+                <div class="text-center">
+                    <div class="text-red-500 mb-4">
+                        <svg
+                            class="w-12 h-12 mx-auto"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <h2
+                        class="text-xl font-semibold text-gray-900 dark:text-white mb-2"
+                    >
+                        Failed to Initialize
+                    </h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        The application failed to start properly.
+                    </p>
+                    <button
+                        onclick={() => window.location.reload()}
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors duration-200"
+                    >
+                        Reload Page
+                    </button>
+                </div>
+            </div>
+        {:else}
+            <!-- Enhanced Error Display -->
+            <ErrorDisplay
+                position="inline"
+                showDetails={import.meta.env.DEV}
+                autoHide={true}
+                autoHideDelay={7000}
+                maxErrors={3}
+            />
+
+            <!-- Legacy Error Banner (fallback) -->
+            {#if error}
+                <div
+                    class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+                >
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg
+                                class="h-5 w-5 text-red-400"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p
+                                class="text-sm font-medium text-red-800 dark:text-red-200"
+                            >
+                                {error}
+                            </p>
+                        </div>
+                        <div class="ml-3">
+                            <button
+                                onclick={() => (error = null)}
+                                class="text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                                aria-label="Close error message"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            <!-- Header -->
+            <header
+                class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
+            >
+                <div class="flex-1">
+                    <h1
+                        class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 leading-tight"
+                    >
+                        Sankey Diagram App
+                    </h1>
+                    <p
+                        class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2"
+                    >
+                        Real-time Sankey diagram visualization tool
+                    </p>
+                </div>
+
+                {#if themeStore.initialized}
+                    <!-- Theme Toggle Button -->
+                    <button
+                        onclick={handleThemeToggle}
+                        class="self-start sm:self-auto p-2 sm:p-3 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
+                               transition-colors duration-200 text-gray-700 dark:text-gray-300 shadow-sm"
+                        title="Toggle theme"
+                        aria-label="Toggle between dark and light theme"
+                    >
+                        {#if themeStore.isDark}
+                            <!-- Sun icon for light mode -->
+                            <svg
+                                class="w-5 h-5 sm:w-6 sm:h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                                ></path>
+                            </svg>
+                        {:else}
+                            <!-- Moon icon for dark mode -->
+                            <svg
+                                class="w-5 h-5 sm:w-6 sm:h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                                ></path>
+                            </svg>
+                        {/if}
+                    </button>
+                {/if}
+            </header>
+
+            <!-- Main content -->
+            <main class="space-y-4 sm:space-y-6">
+                <!-- Data Input Interface -->
+                <DataInput {flows} onFlowsChange={handleFlowsChange} />
+
+                <!-- Control Panel -->
+                <ControlPanel {flows} onClearAll={handleClearAll} />
+
+                <!-- Performance Dashboard -->
+                <PerformanceDashboard {flows} showDetails={flows.length > 20} />
+
+                <!-- Sankey Chart Visualization -->
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
+                >
+                    <h3
+                        class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4"
+                    >
+                        Real-time Sankey Diagram
+                    </h3>
+                    <div class="w-full overflow-hidden">
+                        <SankeyChart
+                            data={chartData}
+                            theme={themeStore.mode}
+                            width="100%"
+                            height="400px"
+                        />
+                    </div>
+                </div>
+            </main>
+        {/if}
+    </div>
+</div>

@@ -1,40 +1,67 @@
 import type { FlowInput, FlowData, ValidationResult } from './types.js';
 
 /**
- * Validates a single flow input and returns validation result
+ * Validates a single flow input and returns validation result with detailed messages
  */
 export function validateFlowInput(input: FlowInput): ValidationResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Validate source
-  if (!input.source || typeof input.source !== 'string' || input.source.trim() === '') {
-    errors.push('Source must be a non-empty string');
+  if (!input.source || typeof input.source !== 'string') {
+    errors.push('Source field is required and must be text');
+  } else if (input.source.trim() === '') {
+    errors.push('Source cannot be empty or just spaces');
+  } else if (input.source.length > 50) {
+    warnings.push('Source name is quite long - consider shortening for better display');
   }
 
   // Validate target
-  if (!input.target || typeof input.target !== 'string' || input.target.trim() === '') {
-    errors.push('Target must be a non-empty string');
+  if (!input.target || typeof input.target !== 'string') {
+    errors.push('Target field is required and must be text');
+  } else if (input.target.trim() === '') {
+    errors.push('Target cannot be empty or just spaces');
+  } else if (input.target.length > 50) {
+    warnings.push('Target name is quite long - consider shortening for better display');
   }
 
   // Validate that source and target are different
-  if (input.source && input.target && input.source.trim() === input.target.trim()) {
-    errors.push('Source and target must be different');
+  if (input.source && input.target &&
+      typeof input.source === 'string' && typeof input.target === 'string' &&
+      input.source.trim() === input.target.trim()) {
+    errors.push('Source and target must be different nodes');
   }
 
-  // Validate value
+  // Validate value with detailed error messages
+  const valueStr = typeof input.value === 'string' ? input.value.trim() : String(input.value);
   const numValue = typeof input.value === 'string' ? parseFloat(input.value) : input.value;
 
-  if (isNaN(numValue)) {
-    errors.push('Value must be a valid number');
+  if (!valueStr || valueStr === '') {
+    errors.push('Value field is required');
+  } else if (isNaN(numValue)) {
+    errors.push('Value must be a valid number (e.g., 10, 5.5, 100)');
   } else if (numValue <= 0) {
-    errors.push('Value must be a positive number');
+    errors.push('Value must be greater than zero');
   } else if (!isFinite(numValue)) {
-    errors.push('Value must be a finite number');
+    errors.push('Value must be a finite number (not infinity)');
+  } else if (numValue > 1000000) {
+    warnings.push('Very large values may affect chart readability');
+  } else if (numValue < 0.01) {
+    warnings.push('Very small values may be hard to see in the chart');
+  }
+
+  // Check for special characters that might cause issues
+  if (input.source && /[<>\"'&]/.test(input.source)) {
+    warnings.push('Source contains special characters that may affect display');
+  }
+  if (input.target && /[<>\"'&]/.test(input.target)) {
+    warnings.push('Target contains special characters that may affect display');
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
+    warnings
   };
 }
 

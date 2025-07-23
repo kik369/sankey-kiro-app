@@ -42,6 +42,43 @@ export interface SankeyChartData {
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
+  warnings?: string[];
+}
+
+/**
+ * Error severity levels
+ */
+export type ErrorSeverity = 'error' | 'warning' | 'info';
+
+/**
+ * Application error interface
+ */
+export interface AppError {
+  id: string;
+  message: string;
+  severity: ErrorSeverity;
+  timestamp: Date;
+  context?: string;
+  recoverable: boolean;
+  userMessage: string;
+}
+
+/**
+ * Chart error types
+ */
+export type ChartErrorType =
+  | 'initialization_failed'
+  | 'rendering_failed'
+  | 'data_transformation_failed'
+  | 'theme_update_failed'
+  | 'resize_failed';
+
+/**
+ * Chart error interface
+ */
+export interface ChartError extends AppError {
+  type: ChartErrorType;
+  chartData?: SankeyChartData;
 }
 
 /**

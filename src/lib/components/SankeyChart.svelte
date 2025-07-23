@@ -22,22 +22,25 @@
     }>();
 
     // Responsive height calculation
-    let containerElement = $state<HTMLDivElement>();
     let responsiveHeight = $state(height);
 
     // Chart instance and container
     let chartContainer = $state<HTMLDivElement>();
     let chartInstance: echarts.ECharts | null = null;
     let isInitialized = $state(false);
-    let updateTimeoutId: number | null = null;
+    let chartError = $state<string | null>(null);
+    let isRetrying = $state(false);
 
     // Import performance utilities
     import { PERFORMANCE_LIMITS } from '$lib/utils/performance-limits.js';
     import { debounce, throttle } from '$lib/utils/debounce.js';
+    import { measurePerformance } from '$lib/utils/performance-monitor.js';
+
+    // Import error handling utilities
     import {
-        performanceMonitor,
-        measurePerformance,
-    } from '$lib/utils/performance-monitor.js';
+        errorHandler,
+        safeChartOperation,
+    } from '$lib/utils/error-handler.js';
 
     // Performance constants
     const DEBOUNCE_DELAY = PERFORMANCE_LIMITS.DEBOUNCE_DELAY;
@@ -451,57 +454,86 @@
         };
     }
 
-    // Initialize chart
-    function initChart() {
+    // Initialize chart with comprehensive error handling
+    async function initChart() {
         if (!chartContainer || chartInstance) return;
 
-        try {
-            chartInstance = echarts.init(chartContainer);
-            isInitialized = true;
-            updateChart();
-        } catch (error) {
-            console.error('Failed to initialize ECharts:', error);
+        const result = await safeChartOperation(
+            () => {
+                chartInstance = echarts.init(chartContainer);
+                isInitialized = true;
+                chartError = null;
+                return true;
+            },
+            'initialization_failed',
+            { containerExists: !!chartContainer }
+        );
+
+        if (result) {
+            // Initialize successful, update chart
+            await updateChart();
+        } else {
+            // Initialization failed
+            chartError =
+                'Failed to initialize chart. Please try refreshing the page.';
+            isInitialized = false;
         }
     }
 
-    // Update chart with new data (with performance optimizations)
-    function updateChart() {
+    // Update chart with new data (with comprehensive error handling)
+    async function updateChart() {
         if (!chartInstance || !isInitialized) return;
 
-        try {
-            // Measure chart update performance
-            const flows = data.links.map((link: SankeyLink) => ({
-                id: `${link.source}-${link.target}`,
-                source: link.source,
-                target: link.target,
-                value: link.value,
-            }));
+        const result = await safeChartOperation(
+            () => {
+                // Validate data before processing
+                if (!data || !data.nodes || !data.links) {
+                    throw new Error('Invalid chart data structure');
+                }
 
-            measurePerformance(
-                () => {
-                    const option = getChartOption(data, theme);
+                // Measure chart update performance
+                const flows = data.links.map((link: SankeyLink) => ({
+                    id: `${link.source}-${link.target}`,
+                    source: link.source,
+                    target: link.target,
+                    value: link.value,
+                }));
 
-                    // Performance optimization: use different update strategies based on data size
-                    const nodeCount = data.nodes.length;
-                    const linkCount = data.links.length;
-                    const isLargeDataset = nodeCount > 30 || linkCount > 60;
+                return measurePerformance(
+                    () => {
+                        const option = getChartOption(data, theme);
 
-                    // Use optimized settings for large datasets
-                    chartInstance!.setOption(option, {
-                        notMerge: isLargeDataset, // Don't merge for large datasets to avoid memory issues
-                        lazyUpdate: isLargeDataset, // Use lazy updates for large datasets
-                        silent: isLargeDataset, // Reduce event overhead for large datasets
-                        replaceMerge: ['series'],
-                    });
+                        // Performance optimization: use different update strategies based on data size
+                        const nodeCount = data.nodes.length;
+                        const linkCount = data.links.length;
+                        const isLargeDataset = nodeCount > 30 || linkCount > 60;
 
-                    // Throttled resize for better performance
-                    throttledResize();
-                },
-                flows,
-                'Chart Update'
-            );
-        } catch (error) {
-            console.error('Failed to update chart:', error);
+                        // Use optimized settings for large datasets
+                        chartInstance!.setOption(option, {
+                            notMerge: isLargeDataset,
+                            lazyUpdate: isLargeDataset,
+                            silent: isLargeDataset,
+                            replaceMerge: ['series'],
+                        });
+
+                        // Throttled resize for better performance
+                        throttledResize();
+
+                        return true;
+                    },
+                    flows,
+                    'Chart Update'
+                );
+            },
+            'rendering_failed',
+            data
+        );
+
+        if (result) {
+            chartError = null;
+        } else {
+            chartError =
+                'Chart update failed. Please check your data and try again.';
         }
     }
 
@@ -517,17 +549,38 @@
         }
     }, 100);
 
-    // Cleanup chart instance
-    function destroyChart() {
+    // Cleanup chart instance with error handling
+    async function destroyChart() {
         if (chartInstance) {
-            try {
-                chartInstance.dispose();
-                chartInstance = null;
-                isInitialized = false;
-            } catch (error) {
-                console.error('Failed to dispose chart:', error);
-            }
+            await safeChartOperation(
+                () => {
+                    chartInstance!.dispose();
+                    chartInstance = null;
+                    isInitialized = false;
+                    chartError = null;
+                    return true;
+                },
+                'initialization_failed', // Reuse this type for cleanup failures
+                null
+            );
         }
+    }
+
+    // Retry chart initialization
+    async function retryChart() {
+        if (isRetrying) return;
+
+        isRetrying = true;
+        chartError = null;
+
+        // Clean up existing instance
+        await destroyChart();
+
+        // Wait a moment before retrying
+        setTimeout(async () => {
+            await initChart();
+            isRetrying = false;
+        }, 1000);
     }
 
     // Calculate responsive height based on screen size
@@ -624,7 +677,47 @@
 </script>
 
 <div class="sankey-chart-container">
-    {#if data.nodes.length === 0 || data.links.length === 0}
+    {#if chartError}
+        <!-- Error state with retry option -->
+        <div
+            class="flex items-center justify-center border-2 border-dashed border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20"
+            style="width: {width}; height: {responsiveHeight};"
+        >
+            <div class="text-center p-6">
+                <div class="text-red-400 dark:text-red-500 mb-4">
+                    <svg
+                        class="w-12 h-12 mx-auto"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        />
+                    </svg>
+                </div>
+                <h3
+                    class="text-lg font-medium text-red-800 dark:text-red-200 mb-2"
+                >
+                    Chart Error
+                </h3>
+                <p class="text-sm text-red-600 dark:text-red-300 mb-4">
+                    {chartError}
+                </p>
+                <button
+                    onclick={retryChart}
+                    disabled={isRetrying}
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed
+                           text-white font-medium rounded-md shadow-sm transition-colors duration-200"
+                >
+                    {isRetrying ? 'Retrying...' : 'Retry'}
+                </button>
+            </div>
+        </div>
+    {:else if data.nodes.length === 0 || data.links.length === 0}
         <!-- Empty state -->
         <div
             class="flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800"

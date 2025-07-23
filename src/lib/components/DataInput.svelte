@@ -8,6 +8,7 @@
     } from '$lib/utils/performance-limits.js';
     import { debounce } from '$lib/utils/debounce.js';
     import PerformanceWarnings from './PerformanceWarnings.svelte';
+    import { errorHandler, safeExecute } from '$lib/utils/error-handler.js';
 
     // Props
     let {
@@ -53,55 +54,68 @@
         debouncedValidation(newFlow);
     });
 
-    function addFlow() {
-        const validation = validateFlowInput(newFlow);
+    async function addFlow() {
+        const result = await safeExecute(() => {
+            // Validate input
+            const validation = validateFlowInput(newFlow);
+            if (!validation.isValid) {
+                validationResult = validation;
+                showValidation = true;
+                return false;
+            }
 
-        if (!validation.isValid) {
-            showValidation = true;
-            return;
-        }
+            // Check performance limits before adding
+            const performanceCheck = canAddFlow(flows, {
+                source: newFlow.source,
+                target: newFlow.target,
+            });
 
-        // Check performance limits before adding
-        const performanceCheck = canAddFlow(flows, {
-            source: newFlow.source,
-            target: newFlow.target,
-        });
+            if (!performanceCheck.canAdd) {
+                // Show performance errors in validation
+                validationResult = {
+                    isValid: false,
+                    errors: performanceCheck.warnings.map(w => w.message),
+                };
+                showValidation = true;
+                return false;
+            }
 
-        if (!performanceCheck.canAdd) {
-            // Show performance errors in validation
-            validationResult = {
-                isValid: false,
-                errors: performanceCheck.warnings.map(w => w.message),
-            };
-            showValidation = true;
-            return;
-        }
-
-        try {
+            // Create flow data
             const flowData = createFlowData(newFlow);
             const updatedFlows = [...flows, flowData];
+
+            // Update flows
             flows = updatedFlows;
             onFlowsChange(updatedFlows);
 
             // Reset form
             newFlow = { source: '', target: '', value: '' };
             showValidation = false;
-        } catch (error) {
-            console.error('Error creating flow:', error);
+
+            return true;
+        }, 'data_input');
+
+        if (!result) {
+            // Handle error case
             validationResult = {
                 isValid: false,
-                errors: ['Failed to create flow. Please try again.'],
+                errors: [
+                    'Failed to add flow. Please check your input and try again.',
+                ],
             };
             showValidation = true;
         }
     }
 
-    // Debounced flow removal for better performance
-    const debouncedRemoveFlow = debounce((flowId: string) => {
-        const updatedFlows = flows.filter(flow => flow.id !== flowId);
-        flows = updatedFlows;
-        onFlowsChange(updatedFlows);
-    }, 50); // Shorter debounce for removal
+    // Debounced flow removal with error handling
+    const debouncedRemoveFlow = debounce(async (flowId: string) => {
+        await safeExecute(() => {
+            const updatedFlows = flows.filter(flow => flow.id !== flowId);
+            flows = updatedFlows;
+            onFlowsChange(updatedFlows);
+            return true;
+        }, 'flow_removal');
+    }, 50);
 
     function removeFlow(flowId: string) {
         debouncedRemoveFlow(flowId);
