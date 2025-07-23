@@ -81,15 +81,17 @@
             console.error('Error transforming flow data:', err);
 
             // Create detailed error through error handler
-            const transformationError = errorHandler.createError(
-                err instanceof Error ? err.message : String(err),
-                'error',
+            const errorMessage =
+                err instanceof Error ? err.message : String(err);
+            errorHandler.createError(
+                errorMessage,
+                'validation',
                 'data_transformation',
                 true
             );
 
             // Set user-friendly error message
-            error = transformationError.userMessage;
+            error = errorMessage;
 
             // Return safe fallback data
             return { nodes: [], links: [] };
@@ -141,13 +143,14 @@
         }, 'flow_update');
 
         if (!result) {
-            const updateError = errorHandler.createError(
-                'Failed to update flows',
-                'error',
+            const errorMessage = 'Failed to update flows';
+            errorHandler.createError(
+                errorMessage,
+                'runtime',
                 'flow_update',
                 true
             );
-            error = updateError.userMessage;
+            error = errorMessage;
         }
     }
 
@@ -160,13 +163,14 @@
         }, 'clear_flows');
 
         if (!result) {
-            const clearError = errorHandler.createError(
-                'Failed to clear flows',
-                'error',
+            const errorMessage = 'Failed to clear flows';
+            errorHandler.createError(
+                errorMessage,
+                'runtime',
                 'clear_flows',
                 true
             );
-            error = clearError.userMessage;
+            error = errorMessage;
         }
     }
 
@@ -183,13 +187,14 @@
         }, 'theme_toggle');
 
         if (!result) {
-            const themeError = errorHandler.createError(
-                'Failed to change theme',
-                'error',
+            const errorMessage = 'Failed to change theme';
+            errorHandler.createError(
+                errorMessage,
+                'runtime',
                 'theme_toggle',
                 true
             );
-            error = themeError.userMessage;
+            error = errorMessage;
         }
     }
 
@@ -258,13 +263,7 @@
             </div>
         {:else}
             <!-- Enhanced Error Display -->
-            <ErrorDisplay
-                position="inline"
-                showDetails={import.meta.env.DEV}
-                autoHide={true}
-                autoHideDelay={7000}
-                maxErrors={3}
-            />
+            <ErrorDisplay />
 
             <!-- Legacy Error Banner (fallback) -->
             {#if error}
