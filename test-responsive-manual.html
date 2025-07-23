@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Manual Responsive Test - Sankey Diagram App</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {},
+                },
+            };
+        </script>
+        <style>
+            .test-section {
+                border: 2px solid #e5e7eb;
+                margin: 1rem 0;
+                padding: 1rem;
+                border-radius: 0.5rem;
+            }
+            .test-section h3 {
+                margin-top: 0;
+                color: #1f2937;
+                font-weight: bold;
+            }
+            .breakpoint-indicator {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #3b82f6;
+                color: white;
+                padding: 0.5rem;
+                border-radius: 0.25rem;
+                font-size: 0.875rem;
+                z-index: 1000;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 p-4">
+        <div class="breakpoint-indicator" id="breakpoint">Desktop</div>
+
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold mb-6 text-center">
+                Responsive Design Test
+            </h1>
+
+            <!-- Test 1: Header Layout -->
+            <div class="test-section">
+                <h3>1. Header Layout (Mobile-first responsive)</h3>
+                <div
+                    class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8"
+                >
+                    <header
+                        class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
+                    >
+                        <div class="flex-1">
+                            <h1
+                                class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight"
+                            >
+                                Sankey Diagram App
+                            </h1>
+                            <p
+                                class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2"
+                            >
+                                Real-time Sankey diagram visualization tool
+                            </p>
+                        </div>
+                        <button
+                            class="self-start sm:self-auto p-2 sm:p-3 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors duration-200 text-gray-700 shadow-sm"
+                        >
+                            <svg
+                                class="w-5 h-5 sm:w-6 sm:h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                                ></path>
+                            </svg>
+                        </button>
+                    </header>
+                </div>
+            </div>
+
+            <!-- Test 2: Data Input Form -->
+            <div class="test-section">
+                <h3>2. Data Input Form (Responsive Grid)</h3>
+                <div
+                    class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200"
+                >
+                    <h3
+                        class="text-lg sm:text-xl font-semibold text-gray-900 mb-4"
+                    >
+                        Add New Flow
+                    </h3>
+
+                    <div
+                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+                    >
+                        <div class="space-y-2">
+                            <label
+                                class="block text-sm font-medium text-gray-700"
+                                >Source</label
+                            >
+                            <input
+                                type="text"
+                                placeholder="Enter source node"
+                                class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 transition-colors duration-200"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-sm font-medium text-gray-700"
+                                >Target</label
+                            >
+                            <input
+                                type="text"
+                                placeholder="Enter target node"
+                                class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 transition-colors duration-200"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-sm font-medium text-gray-700"
+                                >Value</label
+                            >
+                            <input
+                                type="number"
+                                placeholder="Enter value"
+                                class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 transition-colors duration-200"
+                            />
+                        </div>
+                        <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                            <label
+                                class="hidden lg:block text-sm font-medium text-transparent"
+                                >Action</label
+                            >
+                            <button
+                                class="w-full px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm text-base sm:text-sm transition-colors duration-200"
+                            >
+                                Add Flow
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test 3: Flow List -->
+            <div class="test-section">
+                <h3>3. Flow List (Responsive Layout)</h3>
+                <div
+                    class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200"
+                >
+                    <h3
+                        class="text-lg sm:text-xl font-semibold text-gray-900 mb-4"
+                    >
+                        Current Flows (2)
+                    </h3>
+
+                    <div class="space-y-3">
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-md border border-gray-200 space-y-3 sm:space-y-0"
+                        >
+                            <div
+                                class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4"
+                            >
+                                <div class="text-sm">
+                                    <span class="font-medium text-gray-700"
+                                        >Source:</span
+                                    >
+                                    <span class="ml-2 text-gray-900 break-words"
+                                        >Production</span
+                                    >
+                                </div>
+                                <div class="text-sm">
+                                    <span class="font-medium text-gray-700"
+                                        >Target:</span
+                                    >
+                                    <span class="ml-2 text-gray-900 break-words"
+                                        >Distribution</span
+                                    >
+                                </div>
+                                <div class="text-sm">
+                                    <span class="font-medium text-gray-700"
+                                        >Value:</span
+                                    >
+                                    <span class="ml-2 text-gray-900">100</span>
+                                </div>
+                            </div>
+                            <button
+                                class="self-start sm:self-auto sm:ml-4 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors duration-200 flex items-center space-x-2"
+                            >
+                                <svg
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    ></path>
+                                </svg>
+                                <span class="text-sm sm:hidden">Remove</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test 4: Statistics Panel -->
+            <div class="test-section">
+                <h3>4. Statistics Panel (Responsive Grid)</h3>
+                <div
+                    class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200"
+                >
+                    <div
+                        class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0"
+                    >
+                        <div class="flex-1">
+                            <h3
+                                class="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4"
+                            >
+                                Diagram Statistics
+                            </h3>
+                            <div
+                                class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
+                            >
+                                <div
+                                    class="text-center sm:text-left p-3 sm:p-0 bg-blue-50 sm:bg-transparent rounded-lg sm:rounded-none"
+                                >
+                                    <div
+                                        class="text-xl sm:text-2xl font-bold text-blue-600"
+                                    >
+                                        2
+                                    </div>
+                                    <div
+                                        class="text-xs sm:text-sm text-gray-600"
+                                    >
+                                        Total Flows
+                                    </div>
+                                </div>
+                                <div
+                                    class="text-center sm:text-left p-3 sm:p-0 bg-green-50 sm:bg-transparent rounded-lg sm:rounded-none"
+                                >
+                                    <div
+                                        class="text-xl sm:text-2xl font-bold text-green-600"
+                                    >
+                                        3
+                                    </div>
+                                    <div
+                                        class="text-xs sm:text-sm text-gray-600"
+                                    >
+                                        Unique Nodes
+                                    </div>
+                                </div>
+                                <div
+                                    class="text-center sm:text-left p-3 sm:p-0 bg-purple-50 sm:bg-transparent rounded-lg sm:rounded-none"
+                                >
+                                    <div
+                                        class="text-xl sm:text-2xl font-bold text-purple-600"
+                                    >
+                                        150
+                                    </div>
+                                    <div
+                                        class="text-xs sm:text-sm text-gray-600"
+                                    >
+                                        Total Value
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-3 lg:ml-6">
+                            <button
+                                class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md shadow-sm text-base sm:text-sm transition-colors duration-200"
+                            >
+                                Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test 5: Chart Container -->
+            <div class="test-section">
+                <h3>5. Chart Container (Responsive Sizing)</h3>
+                <div
+                    class="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200"
+                >
+                    <h3
+                        class="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4"
+                    >
+                        Real-time Sankey Diagram
+                    </h3>
+                    <div class="w-full overflow-hidden">
+                        <div
+                            class="w-full bg-gray-100 rounded-lg flex items-center justify-center"
+                            style="height: 300px"
+                        >
+                            <div class="text-center">
+                                <div class="text-gray-400 mb-2">
+                                    <svg
+                                        class="w-12 h-12 mx-auto"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                        ></path>
+                                    </svg>
+                                </div>
+                                <h3
+                                    class="text-lg font-medium text-gray-900 mb-1"
+                                >
+                                    Chart Placeholder
+                                </h3>
+                                <p class="text-sm text-gray-500">
+                                    Responsive height: 300px (mobile), 350px
+                                    (tablet), 400px (desktop)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Instructions -->
+            <div class="test-section bg-blue-50 border-blue-200">
+                <h3 class="text-blue-900">Testing Instructions</h3>
+                <div class="text-blue-800 text-sm space-y-2">
+                    <p>
+                        <strong>1. Resize your browser window</strong> to test
+                        different breakpoints:
+                    </p>
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>
+                            <strong>Mobile:</strong> &lt; 640px - Single column
+                            layout, larger touch targets
+                        </li>
+                        <li>
+                            <strong>Tablet:</strong> 640px - 1024px - Two column
+                            form, responsive grid
+                        </li>
+                        <li>
+                            <strong>Desktop:</strong> &gt; 1024px - Four column
+                            form, full layout
+                        </li>
+                    </ul>
+                    <p><strong>2. Check that:</strong></p>
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>
+                            Form inputs stack vertically on mobile, horizontally
+                            on desktop
+                        </li>
+                        <li>
+                            Text sizes adjust appropriately (larger on mobile)
+                        </li>
+                        <li>
+                            Touch targets are larger on mobile (py-2.5 vs py-2)
+                        </li>
+                        <li>
+                            Statistics cards have background on mobile,
+                            transparent on desktop
+                        </li>
+                        <li>Flow list items stack vertically on mobile</li>
+                        <li>
+                            Buttons are full-width on mobile, auto-width on
+                            desktop
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Update breakpoint indicator
+            function updateBreakpointIndicator() {
+                const width = window.innerWidth;
+                const indicator = document.getElementById('breakpoint');
+
+                if (width < 640) {
+                    indicator.textContent = `Mobile (${width}px)`;
+                    indicator.style.backgroundColor = '#ef4444';
+                } else if (width < 1024) {
+                    indicator.textContent = `Tablet (${width}px)`;
+                    indicator.style.backgroundColor = '#f59e0b';
+                } else {
+                    indicator.textContent = `Desktop (${width}px)`;
+                    indicator.style.backgroundColor = '#10b981';
+                }
+            }
+
+            // Update on load and resize
+            updateBreakpointIndicator();
+            window.addEventListener('resize', updateBreakpointIndicator);
+
+            // Test responsive behavior
+            console.log('Responsive Design Test Loaded');
+            console.log(
+                'Current viewport:',
+                window.innerWidth + 'x' + window.innerHeight
+            );
+
+            // Log breakpoint changes
+            let lastWidth = window.innerWidth;
+            window.addEventListener('resize', () => {
+                const currentWidth = window.innerWidth;
+                if (Math.abs(currentWidth - lastWidth) > 50) {
+                    // Only log significant changes
+                    console.log(
+                        'Breakpoint change:',
+                        lastWidth + 'px → ' + currentWidth + 'px'
+                    );
+                    lastWidth = currentWidth;
+                }
+            });
+        </script>
+    </body>
+</html>
