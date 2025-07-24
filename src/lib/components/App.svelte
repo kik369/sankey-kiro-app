@@ -514,7 +514,6 @@
             <main
                 bind:this={mainContent}
                 class="space-y-4 sm:space-y-6 animate-fade-in"
-                role="main"
                 aria-label="Main application content"
                 tabindex="-1"
             >
