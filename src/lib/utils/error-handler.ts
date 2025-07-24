@@ -27,11 +27,13 @@ export const errorHandler = {
             timestamp: new Date(),
         };
         update(errors => [...errors, newError]);
-        
+
         // For critical, user-facing errors, we might also log to a remote service
         if (newError.isUserFacing) {
             console.error(`User-facing error: ${newError.message}`, newError.context);
         }
+
+        return newError;
     },
     // Method to dismiss an error by its ID
     dismissError: (errorId: string) => {
@@ -41,18 +43,26 @@ export const errorHandler = {
     clearErrors: () => {
         set([]);
     },
+    // Method to get all errors (for testing)
+    getAllErrors: () => {
+        let currentErrors: AppError[] = [];
+        const unsubscribe = subscribe(errors => {
+            currentErrors = errors;
+        });
+        unsubscribe();
+        return currentErrors;
+    },
     // Specific error creation helpers
     handleValidationError: (component: string, input: unknown, validationErrors: string[]) => {
-        errorHandler.addError({
+        return errorHandler.addError({
             message: `Invalid input in ${component}: ${validationErrors.join(', ')}`,
             type: 'validation',
             context: { component, input, validationErrors },
             isUserFacing: true,
-
         });
     },
     handlePerformanceWarning: (warningType: string, current: number, limit: number) => {
-        errorHandler.addError({
+        return errorHandler.addError({
             message: `Performance limit reached for ${warningType}. Current: ${current}, Limit: ${limit}.`,
             type: 'performance',
             context: { warningType, current, limit },
@@ -60,7 +70,7 @@ export const errorHandler = {
         });
     },
     createError: (message: string, type: AppError['type'], context?: unknown, isUserFacing = false) => {
-        errorHandler.addError({
+        return errorHandler.addError({
             message,
             type,
             context,

@@ -125,7 +125,7 @@
     -   Test error handling with invalid data inputs
     -   _Requirements: 1.4_
 
--   [ ] 14. Write integration tests
+-   [x] 14. Write integration tests
 
     -   Create end-to-end tests for complete user workflows
     -   Test theme switching with chart updates
@@ -133,7 +133,7 @@
     -   Test data persistence and clearing functionality
     -   _Requirements: 2.1, 2.2, 2.3, 2.4, 6.1, 6.2, 7.2, 7.3_
 
--   [ ] 15. Optimize and finalize application
+-   [x] 15. Optimize and finalize application
     -   Perform final performance testing and optimization
     -   Add accessibility features and keyboard navigation
     -   Implement final UI polish and animations

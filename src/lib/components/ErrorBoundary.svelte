@@ -69,15 +69,22 @@
             }
         };
 
-        window.addEventListener('error', handleGlobalError);
-        window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-        return () => {
-            window.removeEventListener('error', handleGlobalError);
-            window.removeEventListener(
+        if (typeof window !== 'undefined') {
+            window.addEventListener('error', handleGlobalError);
+            window.addEventListener(
                 'unhandledrejection',
                 handleUnhandledRejection
             );
+        }
+
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('error', handleGlobalError);
+                window.removeEventListener(
+                    'unhandledrejection',
+                    handleUnhandledRejection
+                );
+            }
         };
     });
 

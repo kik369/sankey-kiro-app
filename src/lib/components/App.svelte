@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import type { FlowData } from '$lib/types';
     import { transformFlowsToSankeyData } from '$lib/transform';
     import { themeStore } from '$lib/stores/theme.svelte';
@@ -9,12 +9,28 @@
     import PerformanceDashboard from './PerformanceDashboard.svelte';
     import ErrorDisplay from './ErrorDisplay.svelte';
     import { errorHandler, safeExecute } from '$lib/utils/error-handler.js';
+    import {
+        AccessibilityManager,
+        generateChartDescription,
+    } from '$lib/utils/accessibility';
+    import { performanceOptimizer } from '$lib/utils/performance-optimizer';
+    import { animationManager, animations } from '$lib/utils/animations';
 
     // Global application state using Svelte 5 runes
     let flows = $state([] as FlowData[]);
     let initialized = $state(false);
     let error = $state<string | null>(null);
     let isLoading = $state(false);
+
+    // Accessibility and performance managers
+    let accessibilityManager: AccessibilityManager | null = null;
+    let appContainer: HTMLElement | undefined = $state();
+    let mainContent: HTMLElement | undefined = $state();
+
+    // Performance tracking
+    let performanceProfile = $state(
+        performanceOptimizer.getPerformanceProfile()
+    );
 
     // Pure derived chart data without side effects
     let chartData = $derived.by(() => {
@@ -120,19 +136,69 @@
         }
     });
 
-    // Initialize application
-    onMount(() => {
+    // Initialize application with accessibility and performance features
+    onMount(async () => {
         try {
             isLoading = true;
+
+            // Initialize theme store
             themeStore.initialize();
+
+            // Initialize accessibility manager
+            if (appContainer) {
+                accessibilityManager = new AccessibilityManager(appContainer, {
+                    enableKeyboardNavigation: true,
+                    enableScreenReader: true,
+                    enableHighContrast: true,
+                    enableReducedMotion: true,
+                });
+
+                // Announce app initialization
+                accessibilityManager.announce(
+                    'Sankey Diagram App loaded successfully'
+                );
+            }
+
+            // Animate main content in
+            if (mainContent) {
+                await animations.fadeIn(mainContent, { duration: 500 });
+            }
+
+            // Update performance profile periodically
+            const performanceInterval = setInterval(() => {
+                performanceProfile =
+                    performanceOptimizer.getPerformanceProfile();
+            }, 2000);
+
+            // Store interval for cleanup
+            (globalThis as any).__performanceInterval = performanceInterval;
+
             initialized = true;
             error = null;
         } catch (err) {
             console.error('Failed to initialize application:', err);
             error =
                 'Failed to initialize application. Please refresh the page.';
+
+            if (accessibilityManager) {
+                accessibilityManager.announceError(
+                    'Application failed to initialize'
+                );
+            }
         } finally {
             isLoading = false;
+        }
+    });
+
+    // Cleanup on destroy
+    onDestroy(() => {
+        accessibilityManager?.destroy();
+        performanceOptimizer.destroy();
+        animationManager?.cancelAllAnimations();
+
+        // Clear performance monitoring interval
+        if ((globalThis as any).__performanceInterval) {
+            clearInterval((globalThis as any).__performanceInterval);
         }
     });
 
@@ -161,6 +227,20 @@
 
             flows = newFlows;
             error = null;
+
+            // Announce chart update to screen readers
+            if (accessibilityManager) {
+                const uniqueNodes = new Set<string>();
+                newFlows.forEach(flow => {
+                    uniqueNodes.add(flow.source);
+                    uniqueNodes.add(flow.target);
+                });
+                accessibilityManager.announceChartUpdate(
+                    uniqueNodes.size,
+                    newFlows.length
+                );
+            }
+
             return true;
         }, 'flow_update');
 
@@ -173,6 +253,10 @@
                 true
             );
             error = errorMessage;
+
+            if (accessibilityManager) {
+                accessibilityManager.announceError(errorMessage);
+            }
         }
     }
 
@@ -181,6 +265,14 @@
         const result = await safeExecute(() => {
             flows = [];
             error = null;
+
+            // Announce clear action to screen readers
+            if (accessibilityManager) {
+                accessibilityManager.announce(
+                    'All data flows have been cleared'
+                );
+            }
+
             return true;
         }, 'clear_flows');
 
@@ -193,6 +285,10 @@
                 true
             );
             error = errorMessage;
+
+            if (accessibilityManager) {
+                accessibilityManager.announceError(errorMessage);
+            }
         }
     }
 
@@ -203,7 +299,17 @@
                 throw new Error('Theme store not properly initialized');
             }
 
+            const oldTheme = themeStore.mode;
             themeStore.toggle();
+            const newTheme = themeStore.mode;
+
+            // Announce theme change to screen readers
+            if (accessibilityManager) {
+                accessibilityManager.announce(
+                    `Theme changed to ${newTheme} mode`
+                );
+            }
+
             error = null;
             return true;
         }, 'theme_toggle');
@@ -217,6 +323,10 @@
                 true
             );
             error = errorMessage;
+
+            if (accessibilityManager) {
+                accessibilityManager.announceError(errorMessage);
+            }
         }
     }
 
@@ -233,7 +343,10 @@
 </script>
 
 <div
+    bind:this={appContainer}
     class="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200"
+    role="application"
+    aria-label="Sankey Diagram Application"
 >
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <!-- Loading State -->
@@ -398,7 +511,21 @@
             </header>
 
             <!-- Main content -->
-            <main class="space-y-4 sm:space-y-6">
+            <main
+                bind:this={mainContent}
+                class="space-y-4 sm:space-y-6 animate-fade-in"
+                role="main"
+                aria-label="Main application content"
+                tabindex="-1"
+            >
+                <!-- Screen reader description -->
+                <div class="sr-only" aria-live="polite">
+                    {generateChartDescription(
+                        chartData.nodes.length,
+                        flows.length,
+                        flows
+                    )}
+                </div>
                 <!-- Data Input Interface -->
                 <DataInput {flows} onFlowsChange={handleFlowsChange} />
 
@@ -409,14 +536,76 @@
                 <PerformanceDashboard {flows} showDetails={flows.length > 20} />
 
                 <!-- Sankey Chart Visualization -->
-                <div
-                    class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
+                <section
+                    class="card chart-container"
+                    role="img"
+                    aria-label="Sankey diagram visualization"
+                    aria-describedby="chart-description"
                 >
-                    <h3
-                        class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4"
-                    >
-                        Real-time Sankey Diagram
-                    </h3>
+                    <div class="flex justify-between items-center mb-3 sm:mb-4">
+                        <h3
+                            class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white"
+                        >
+                            Real-time Sankey Diagram
+                        </h3>
+
+                        <!-- Performance indicator -->
+                        <div class="flex items-center space-x-2">
+                            <div
+                                class="performance-indicator {performanceProfile.isOptimal
+                                    ? 'optimal'
+                                    : 'warning'}"
+                            >
+                                <div
+                                    class="w-2 h-2 rounded-full bg-current mr-1"
+                                ></div>
+                                <span class="text-xs">
+                                    {performanceProfile.isOptimal
+                                        ? 'Optimal'
+                                        : 'Optimizing'}
+                                </span>
+                            </div>
+
+                            <!-- Accessibility toggle -->
+                            <button
+                                onclick={() =>
+                                    accessibilityManager?.toggleHighContrast()}
+                                class="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                                title="Toggle high contrast mode"
+                                aria-label="Toggle high contrast mode"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chart description for screen readers -->
+                    <div id="chart-description" class="sr-only">
+                        {generateChartDescription(
+                            chartData.nodes.length,
+                            flows.length,
+                            flows
+                        )}
+                    </div>
+
                     <div class="w-full overflow-hidden">
                         <SankeyChart
                             data={{
@@ -428,7 +617,27 @@
                             height="400px"
                         />
                     </div>
-                </div>
+
+                    <!-- Chart data summary for accessibility -->
+                    {#if flows.length > 0}
+                        <div
+                            class="mt-4 text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            <p>
+                                Chart contains {chartData.nodes.length} nodes and
+                                {flows.length} connections.
+                                {#if flows.length > 0}
+                                    Total flow value: {flows
+                                        .reduce(
+                                            (sum, flow) => sum + flow.value,
+                                            0
+                                        )
+                                        .toFixed(2)}.
+                                {/if}
+                            </p>
+                        </div>
+                    {/if}
+                </section>
             </main>
         {/if}
     </div>

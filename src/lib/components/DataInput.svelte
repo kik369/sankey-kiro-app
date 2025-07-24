@@ -123,7 +123,7 @@
                 // Log creation error
                 errorHandler.createError(
                     `Flow creation failed: ${errorMessage}`,
-                    'error',
+                    'runtime',
                     'flow_creation',
                     true
                 );
@@ -176,7 +176,7 @@
 
                 errorHandler.createError(
                     `Flow update failed: ${errorMessage}`,
-                    'error',
+                    'runtime',
                     'flow_update',
                     true
                 );
@@ -201,7 +201,7 @@
             // Create comprehensive error report
             errorHandler.createError(
                 'Flow addition operation failed',
-                'error',
+                'runtime',
                 'data_input',
                 true
             );
