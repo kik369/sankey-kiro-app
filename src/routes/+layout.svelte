@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ErrorDisplay from '$lib/components/ErrorDisplay.svelte';
+    import ErrorDisplay from '../lib/components/ErrorDisplay.svelte';
     import '../app.css';
 </script>
 

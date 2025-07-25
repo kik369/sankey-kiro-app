@@ -1,14 +1,14 @@
 <script lang="ts">
-    import type { FlowInput, FlowData, ValidationResult } from '$lib/types.js';
-    import { validateFlowInput, createFlowData } from '$lib/validation.js';
+    import type { FlowInput, FlowData, ValidationResult } from '../types.js';
+    import { validateFlowInput, createFlowData } from '../validation.js';
     import {
         canAddFlow,
         analyzePerformance,
         PERFORMANCE_LIMITS,
-    } from '$lib/utils/performance-limits.js';
-    import { debounce } from '$lib/utils/debounce.js';
+    } from '../utils/performance-limits.js';
+    import { debounce } from '../utils/debounce.js';
     import PerformanceWarnings from './PerformanceWarnings.svelte';
-    import { errorHandler, safeExecute } from '$lib/utils/error-handler.js';
+    import { errorHandler, safeExecute } from '../utils/error-handler.js';
 
     // Props
     let {

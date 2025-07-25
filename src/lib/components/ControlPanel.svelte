@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { FlowData } from '$lib/types.js';
+    import type { FlowData } from '../types.js';
 
     // Props
     interface Props {

@@ -1,20 +1,20 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import type { FlowData } from '$lib/types';
-    import { transformFlowsToSankeyData } from '$lib/transform';
-    import { themeStore } from '$lib/stores/theme.svelte';
+    import type { FlowData } from '../types';
+    import { transformFlowsToSankeyData } from '../transform';
+    import { themeStore } from '../stores/theme.svelte';
     import SankeyChart from './SankeyChart.svelte';
     import DataInput from './DataInput.svelte';
     import ControlPanel from './ControlPanel.svelte';
     import PerformanceDashboard from './PerformanceDashboard.svelte';
     import ErrorDisplay from './ErrorDisplay.svelte';
-    import { errorHandler, safeExecute } from '$lib/utils/error-handler.js';
+    import { errorHandler, safeExecute } from '../utils/error-handler.js';
     import {
         AccessibilityManager,
         generateChartDescription,
-    } from '$lib/utils/accessibility';
-    import { performanceOptimizer } from '$lib/utils/performance-optimizer';
-    import { animationManager, animations } from '$lib/utils/animations';
+    } from '../utils/accessibility';
+    import { performanceOptimizer } from '../utils/performance-optimizer';
+    import { animationManager, animations } from '../utils/animations';
 
     // Global application state using Svelte 5 runes
     let flows = $state([] as FlowData[]);

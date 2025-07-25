@@ -1,11 +1,11 @@
 <script lang="ts">
-    import type { FlowData } from '$lib/types.js';
+    import type { FlowData } from '../types.js';
     import {
         analyzePerformance,
         estimateMemoryUsage,
         getOptimizationSuggestions,
         type PerformanceWarning,
-    } from '$lib/utils/performance-limits.js';
+    } from '../utils/performance-limits.js';
 
     // Props
     let {

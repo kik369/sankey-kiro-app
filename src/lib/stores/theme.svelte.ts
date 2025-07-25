@@ -3,7 +3,7 @@
  */
 
 import type { ThemeMode, ThemeConfig } from '$lib/types';
-import { getThemeConfig, initializeTheme, applyTheme, storeTheme } from '$lib/theme';
+import { getThemeConfig, initializeTheme, applyTheme, storeTheme } from '../theme';
 
 /**
  * Theme state management class using Svelte 5 runes

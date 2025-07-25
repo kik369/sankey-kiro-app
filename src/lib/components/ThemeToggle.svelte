@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type { ThemeMode } from '$lib/types';
-    import { applyTheme, storeTheme } from '$lib/theme';
+    import type { ThemeMode } from '../types';
+    import { applyTheme, storeTheme } from '../theme';
 
     interface Props {
         theme: ThemeMode;

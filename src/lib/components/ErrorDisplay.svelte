@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { errorHandler, type AppError } from '$lib/utils/error-handler';
+    import { errorHandler, type AppError } from '../utils/error-handler';
     import { fly } from 'svelte/transition';
 
     let errors = $state<AppError[]>([]);

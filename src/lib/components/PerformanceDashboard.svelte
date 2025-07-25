@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { FlowData } from '$lib/types.js';
-    import { performanceMonitor } from '$lib/utils/performance-monitor.js';
-    import { PERFORMANCE_LIMITS } from '$lib/utils/performance-limits.js';
+    import type { FlowData } from '../types.js';
+    import { performanceMonitor } from '../utils/performance-monitor.js';
+    import { PERFORMANCE_LIMITS } from '../utils/performance-limits.js';
 
     // Props
     let {

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { errorHandler, safeExecute } from '$lib/utils/error-handler';
-    import type { AppError } from '$lib/types';
+    import { errorHandler, safeExecute } from '../utils/error-handler';
+    import type { AppError } from '../types';
 
     // Props
     let {
