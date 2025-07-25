@@ -1,7 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { errorHandler, safeExecute } from '../utils/error-handler';
-    import type { AppError } from '../types';
+    import {
+        errorHandler,
+        safeExecute,
+        type AppError,
+    } from '../utils/error-handler';
 
     // Props
     let {
@@ -25,13 +28,16 @@
 
     onMount(() => {
         // Subscribe to errors in this context
-        unsubscribe = errorHandler.onError(appError => {
-            if (appError.context === context || !appError.context) {
+        unsubscribe = errorHandler.subscribe(errors => {
+            const latestError = errors[errors.length - 1];
+            if (
+                latestError &&
+                (latestError.context === context || !latestError.context)
+            ) {
                 hasError = true;
-                error = appError;
-
+                error = latestError;
                 if (onError) {
-                    onError(appError);
+                    onError(latestError);
                 }
             }
         });
@@ -40,7 +46,7 @@
         const handleGlobalError = (event: ErrorEvent) => {
             const appError = errorHandler.createError(
                 event.message || 'Unknown error occurred',
-                'error',
+                'runtime',
                 context,
                 true
             );
@@ -56,7 +62,7 @@
         const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
             const appError = errorHandler.createError(
                 event.reason?.message || 'Unhandled promise rejection',
-                'error',
+                'runtime',
                 context,
                 true
             );
@@ -96,7 +102,7 @@
 
     function retry() {
         if (error) {
-            errorHandler.clearError(error.id);
+            errorHandler.clearErrors();
         }
 
         hasError = false;
@@ -109,8 +115,7 @@
                 error: error.message,
                 context: error.context,
                 timestamp: error.timestamp,
-                recoverable: error.recoverable,
-                userMessage: error.userMessage,
+                userMessage: error.userUserMessage,
             });
         }
     }

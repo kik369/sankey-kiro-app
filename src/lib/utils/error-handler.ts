@@ -2,6 +2,9 @@ import { writable } from 'svelte/store';
 
 // Define the structure for a single error
 export interface AppError {
+    userUserMessage: any;
+    userMessage: any;
+    recoverable: any;
     id: string;
     message: string;
     type: 'validation' | 'performance' | 'runtime' | 'generic';
@@ -58,6 +61,9 @@ export const errorHandler = {
             message: `Invalid input in ${component}: ${validationErrors.join(', ')}`,
             type: 'validation',
             context: { component, input, validationErrors },
+            userMessage: `Please check your input for ${component}.`,
+            userUserMessage: `Please check your input for ${component}.`, // Typo in original, keeping for now
+            recoverable: true,
             isUserFacing: true,
         });
     },
@@ -66,14 +72,20 @@ export const errorHandler = {
             message: `Performance limit reached for ${warningType}. Current: ${current}, Limit: ${limit}.`,
             type: 'performance',
             context: { warningType, current, limit },
+            userMessage: `The application is approaching its performance limits. Consider reducing the complexity of your data.`,
+            userUserMessage: `The application is approaching its performance limits. Consider reducing the complexity of your data.`, // Typo in original, keeping for now
+            recoverable: true,
             isUserFacing: true,
         });
     },
-    createError: (message: string, type: AppError['type'], context?: unknown, isUserFacing = false) => {
+    createError: (message: string, type: AppError['type'], context?: unknown, isUserFacing = false, userMessage?: string, recoverable = false) => {
         return errorHandler.addError({
             message,
             type,
             context,
+            userMessage: userMessage || 'An unexpected error occurred.',
+            userUserMessage: userMessage || 'An unexpected error occurred.', // Typo in original, keeping for now
+            recoverable,
             isUserFacing,
         });
     }
@@ -91,8 +103,10 @@ export async function safeExecute<T>(
         errorHandler.createError(
             `Operation failed in ${errorContext}: ${errorMessage}`,
             'runtime',
-            { context: errorContext, originalError: error },
-            true // Assume most runtime errors should be user-facing
+            { context: errorContext, originalError: error }, // Context
+            true, // isUserFacing
+            'An unexpected error occurred during an operation. Please try again.', // userMessage
+            true // recoverable
         );
         return null;
     }
