@@ -29,9 +29,9 @@
     border: 0;
   }
 
-  /* Focus styles for better accessibility */
+  /* Focus styles: subtle and consistent */
   *:focus {
-    outline: 2px solid theme('colors.blue.500');
+    outline: 2px solid theme('colors.teal.500');
     outline-offset: 2px;
   }
 
@@ -104,11 +104,19 @@
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:ring-blue-500;
+    @apply bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 focus:ring-teal-500;
   }
 
   .btn-secondary {
     @apply bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 focus:ring-gray-500;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .icon-btn {
+    @apply p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 shadow-sm transition-colors duration-200;
   }
 
   .input-field {
@@ -121,11 +129,11 @@
 
   /* Card animations */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-300;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-300;
   }
 
   .card:hover {
-    @apply shadow-lg transform translate-y-[-2px];
+    @apply shadow-md transform translate-y-[-2px];
   }
 
   /* Loading animations */
@@ -225,20 +233,12 @@
   }
 
   /* Performance indicators */
-  .performance-indicator {
-    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  .pill-neutral {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
   }
 
-  .performance-indicator.optimal {
-    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-  }
-
-  .performance-indicator.warning {
-    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-  }
-
-  .performance-indicator.critical {
-    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  .pill-dot {
+    @apply w-2 h-2 rounded-full mr-2 inline-block;
   }
 
   /* Tooltip improvements */
@@ -321,10 +321,30 @@
 
   /* Focus utilities */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+    @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
   }
 
   .focus-ring-inset {
-    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500;
+  }
+
+  .hairline {
+    @apply border-t border-gray-200 dark:border-gray-700;
+  }
+
+  /* Neutral alert patterns */
+  .alert {
+    @apply bg-white dark:bg-gray-800 border rounded-md p-3;
+  }
+  .alert-neutral {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+  .alert-warning {
+    @apply border-yellow-300 dark:border-yellow-700;
+    border-left-width: 4px;
+  }
+  .alert-error {
+    @apply border-red-300 dark:border-red-700;
+    border-left-width: 4px;
   }
 }

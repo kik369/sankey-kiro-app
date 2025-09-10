@@ -126,7 +126,7 @@
         {@render fallback(error, retry)}
     {:else}
         <div
-            class="error-boundary p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+            class="error-boundary p-6 alert alert-error bg-white dark:bg-gray-800 rounded-lg"
         >
             <div class="flex items-start">
                 <div class="flex-shrink-0">
@@ -146,11 +146,11 @@
                 </div>
                 <div class="ml-3 flex-1">
                     <h3
-                        class="text-lg font-medium text-red-800 dark:text-red-200"
+                        class="text-lg font-medium text-gray-900 dark:text-gray-100"
                     >
                         Something went wrong
                     </h3>
-                    <p class="mt-2 text-sm text-red-700 dark:text-red-300">
+                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
                         {error.userMessage}
                     </p>
 
@@ -162,7 +162,7 @@
                                 Technical Details
                             </summary>
                             <div
-                                class="mt-2 p-3 bg-red-100 dark:bg-red-900/40 rounded text-xs text-red-800 dark:text-red-200"
+                                class="mt-2 p-3 rounded text-xs bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                             >
                                 <div>
                                     <strong>Error:</strong>
@@ -188,7 +188,7 @@
                         {#if error.recoverable}
                             <button
                                 onclick={retry}
-                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
+                                class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
                             >
                                 Try Again
                             </button>
@@ -204,7 +204,7 @@
                         {#if import.meta.env.DEV}
                             <button
                                 onclick={reportError}
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
+                                class="px-4 py-2 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:hover:bg-teal-900/40 text-sm font-medium rounded-md transition-colors duration-200"
                             >
                                 Report Error
                             </button>

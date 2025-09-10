@@ -34,7 +34,7 @@
         <!-- Error warnings (blocking) -->
         {#if errorWarnings.length > 0}
             <div
-                class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+                class="alert alert-error rounded-lg p-4 bg-white dark:bg-gray-800"
             >
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -71,7 +71,7 @@
         <!-- Warning messages -->
         {#if warningMessages.length > 0}
             <div
-                class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+                class="alert alert-warning rounded-lg p-4 bg-white dark:bg-gray-800"
             >
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -107,9 +107,7 @@
 
         <!-- Performance details (expandable) -->
         {#if showDetails && (warnings.length > 0 || memoryUsage.level !== 'low')}
-            <div
-                class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-            >
+            <div class="alert alert-neutral rounded-lg p-4">
                 <button
                     onclick={() => (showExpandedDetails = !showExpandedDetails)}
                     class="flex items-center justify-between w-full text-left"
@@ -120,7 +118,7 @@
                         Performance Details
                     </h4>
                     <svg
-                        class="h-4 w-4 text-blue-600 dark:text-blue-400 transform transition-transform duration-200 {showExpandedDetails
+                        class="h-4 w-4 text-teal-600 dark:text-teal-400 transform transition-transform duration-200 {showExpandedDetails
                             ? 'rotate-180'
                             : ''}"
                         fill="none"

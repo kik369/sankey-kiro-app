@@ -63,14 +63,16 @@
             : 'text-red-600 dark:text-red-400';
     }
 
-    function getTrendIcon(trend: 'improving' | 'stable' | 'degrading'): string {
+    function getTrendIconPath(
+        trend: 'improving' | 'stable' | 'degrading'
+    ): string {
         switch (trend) {
             case 'improving':
-                return '↗️';
+                return 'M4 16l6-6 6 6'; // up-right arrow
             case 'degrading':
-                return '↘️';
+                return 'M4 8l6 6 6-6'; // down-right arrow
             default:
-                return '→';
+                return 'M4 12h12'; // horizontal line
         }
     }
 
@@ -99,21 +101,21 @@
             <div class="flex items-center space-x-2">
                 <button
                     onclick={() => (showDashboard = !showDashboard)}
-                    class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                    class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
                     {showDashboard ? 'Hide' : 'Show'} Details
                 </button>
                 {#if !updateInterval}
                     <button
                         onclick={startPerformanceMonitoring}
-                        class="px-3 py-1 text-sm bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-md hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                        class="px-3 py-1 text-sm bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
                     >
                         Start Monitoring
                     </button>
                 {:else}
                     <button
                         onclick={stopPerformanceMonitoring}
-                        class="px-3 py-1 text-sm bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-md hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                        class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                     >
                         Stop Monitoring
                     </button>
@@ -131,11 +133,37 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div class="text-center">
                 <div
-                    class="text-2xl font-bold {getStatusColor(
-                        performanceStatus.isHealthy
-                    )}"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700"
                 >
-                    {performanceStatus.isHealthy ? '✓' : '⚠'}
+                    {#if performanceStatus.isHealthy}
+                        <svg
+                            class="w-6 h-6 {getStatusColor(true)}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5 13l4 4L19 7"
+                            />
+                        </svg>
+                    {:else}
+                        <svg
+                            class="w-6 h-6 {getStatusColor(false)}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01M4.93 19h14.14c1.2 0 1.97-1.3 1.36-2.35L13.36 5.65a1.5 1.5 0 00-2.72 0L3.57 16.65C2.96 17.7 3.73 19 4.93 19z"
+                            />
+                        </svg>
+                    {/if}
                 </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">
                     {performanceStatus.isHealthy ? 'Healthy' : 'Issues'}
@@ -222,9 +250,21 @@
                                         performanceTrends.transformTimetrend
                                     )} text-sm"
                                 >
-                                    {getTrendIcon(
-                                        performanceTrends.transformTimetrend
-                                    )}
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d={getTrendIconPath(
+                                                performanceTrends.transformTimetrend
+                                            )}
+                                        />
+                                    </svg>
                                 </span>
                             </div>
                             <div
@@ -256,9 +296,21 @@
                                         performanceTrends.renderTimetrend
                                     )} text-sm"
                                 >
-                                    {getTrendIcon(
-                                        performanceTrends.renderTimetrend
-                                    )}
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d={getTrendIconPath(
+                                                performanceTrends.renderTimetrend
+                                            )}
+                                        />
+                                    </svg>
                                 </span>
                             </div>
                             <div
@@ -290,9 +342,21 @@
                                         performanceTrends.memoryTrend
                                     )} text-sm"
                                 >
-                                    {getTrendIcon(
-                                        performanceTrends.memoryTrend
-                                    )}
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d={getTrendIconPath(
+                                                performanceTrends.memoryTrend
+                                            )}
+                                        />
+                                    </svg>
                                 </span>
                             </div>
                             <div

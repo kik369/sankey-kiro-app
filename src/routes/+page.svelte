@@ -4,9 +4,14 @@
 
 <svelte:head>
     <title>Sankey Kiro App</title>
-    <meta name="description" content="A dynamic Sankey diagram generator built with Svelte and ECharts." />
+    <meta
+        name="description"
+        content="A dynamic Sankey diagram generator built with Svelte and ECharts."
+    />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<div
+    class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+>
     <App />
 </div>

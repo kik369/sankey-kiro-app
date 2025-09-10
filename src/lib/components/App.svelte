@@ -348,13 +348,13 @@
     role="application"
     aria-label="Sankey Diagram Application"
 >
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         <!-- Loading State -->
         {#if isLoading}
             <div class="flex items-center justify-center min-h-screen">
                 <div class="text-center">
                     <div
-                        class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"
+                        class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 dark:border-teal-400 mx-auto mb-4"
                     ></div>
                     <p class="text-gray-600 dark:text-gray-400">
                         Loading application...
@@ -402,9 +402,7 @@
 
             <!-- Legacy Error Banner (fallback) -->
             {#if error}
-                <div
-                    class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
-                >
+                <div class="mb-6 alert alert-error bg-white dark:bg-gray-800">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <svg
@@ -451,7 +449,7 @@
 
             <!-- Header -->
             <header
-                class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
+                class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 gap-3"
             >
                 <div class="flex-1">
                     <h1
@@ -470,8 +468,7 @@
                     <!-- Theme Toggle Button -->
                     <button
                         onclick={handleThemeToggle}
-                        class="self-start sm:self-auto p-2 sm:p-3 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
-                               transition-colors duration-200 text-gray-700 dark:text-gray-300 shadow-sm"
+                        class="self-start sm:self-auto icon-btn"
                         title="Toggle theme"
                         aria-label="Toggle between dark and light theme"
                     >
@@ -513,7 +510,7 @@
             <!-- Main content -->
             <main
                 bind:this={mainContent}
-                class="space-y-4 sm:space-y-6 animate-fade-in"
+                class="space-y-5 sm:space-y-7 animate-fade-in"
                 aria-label="Main application content"
                 tabindex="-1"
             >
@@ -549,15 +546,13 @@
                         </h3>
 
                         <!-- Performance indicator -->
-                        <div class="flex items-center space-x-2">
-                            <div
-                                class="performance-indicator {performanceProfile.isOptimal
-                                    ? 'optimal'
-                                    : 'warning'}"
-                            >
-                                <div
-                                    class="w-2 h-2 rounded-full bg-current mr-1"
-                                ></div>
+                        <div class="flex items-center gap-2">
+                            <div class="pill-neutral">
+                                <span
+                                    class="pill-dot {performanceProfile.isOptimal
+                                        ? 'bg-teal-500'
+                                        : 'bg-amber-500'}"
+                                ></span>
                                 <span class="text-xs">
                                     {performanceProfile.isOptimal
                                         ? 'Optimal'

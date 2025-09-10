@@ -18,12 +18,12 @@
 </script>
 
 {#if errors.length > 0}
-    <div class="fixed bottom-4 right-4 w-full max-w-sm space-y-4 z-50">
+    <div class="fixed bottom-4 right-4 w-full max-w-sm space-y-3 z-50">
         {#each errors as error (error.id)}
             <div
                 in:fly={{ y: 20, duration: 300 }}
                 out:fly={{ y: 20, duration: 200 }}
-                class="p-4 rounded-lg shadow-lg border flex items-start space-x-3 text-sm font-medium transition-all"
+                class="p-3 rounded-lg shadow-md border flex items-start gap-3 text-sm transition-all bg-white/95 dark:bg-gray-800/95 backdrop-blur"
                 role="alert"
                 aria-live="assertive"
                 class:bg-red-50={error.type === 'runtime' ||
@@ -80,7 +80,9 @@
                     {/if}
                 </div>
                 <div class="flex-1">
-                    <p>{error.message}</p>
+                    <p class="text-gray-900 dark:text-gray-100">
+                        {error.message}
+                    </p>
                 </div>
                 <div class="flex-shrink-0">
                     <button

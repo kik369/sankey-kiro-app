@@ -47,7 +47,7 @@
 </script>
 
 <div
-    class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
+    class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
 >
     <div
         class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0"
@@ -61,10 +61,10 @@
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div
-                    class="text-center sm:text-left p-3 sm:p-0 bg-blue-50 dark:bg-blue-900/20 sm:bg-transparent dark:sm:bg-transparent rounded-lg sm:rounded-none"
+                    class="text-center sm:text-left p-3 sm:p-0 rounded-lg sm:rounded-none"
                 >
                     <div
-                        class="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400"
+                        class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
                     >
                         {stats().totalFlows}
                     </div>
@@ -75,10 +75,10 @@
                     </div>
                 </div>
                 <div
-                    class="text-center sm:text-left p-3 sm:p-0 bg-green-50 dark:bg-green-900/20 sm:bg-transparent dark:sm:bg-transparent rounded-lg sm:rounded-none"
+                    class="text-center sm:text-left p-3 sm:p-0 rounded-lg sm:rounded-none"
                 >
                     <div
-                        class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400"
+                        class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
                     >
                         {stats().uniqueNodes}
                     </div>
@@ -89,10 +89,10 @@
                     </div>
                 </div>
                 <div
-                    class="text-center sm:text-left p-3 sm:p-0 bg-purple-50 dark:bg-purple-900/20 sm:bg-transparent dark:sm:bg-transparent rounded-lg sm:rounded-none"
+                    class="text-center sm:text-left p-3 sm:p-0 rounded-lg sm:rounded-none"
                 >
                     <div
-                        class="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400"
+                        class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
                     >
                         {stats().totalValue}
                     </div>
@@ -110,10 +110,7 @@
             <button
                 onclick={handleClearAll}
                 disabled={flows.length === 0}
-                class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400
-               disabled:cursor-not-allowed text-white font-medium rounded-md shadow-sm text-base sm:text-sm
-               focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
-               transition-colors duration-200"
+                class="w-full sm:w-auto btn btn-danger disabled:bg-gray-400 disabled:cursor-not-allowed text-base sm:text-sm"
             >
                 Clear All Data
             </button>
@@ -122,9 +119,7 @@
 
     <!-- Performance Warnings -->
     {#if stats().uniqueNodes > 40 || stats().totalFlows > 80}
-        <div
-            class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md"
-        >
+        <div class="mt-4 alert alert-warning">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <svg
